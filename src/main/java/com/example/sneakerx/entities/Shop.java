@@ -22,7 +22,7 @@ public class Shop {
     @Id
     private Integer shopId;
 
-    private String userId;
+    private Integer userId;
 
     private String shopName;
     private String shopDescription;

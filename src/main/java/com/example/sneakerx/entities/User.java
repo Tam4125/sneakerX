@@ -38,6 +38,8 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    private boolean enabled = false;
+
     // RELATIONSHIPS
 
 }
