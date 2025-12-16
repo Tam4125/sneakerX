@@ -174,8 +174,6 @@ class _SignInScreenState extends State<SignInScreen> {
                             ),
                             const SizedBox(height: 10),
 
-                            // Sign up with google or facebook part
-
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
@@ -194,7 +192,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             ),
                             const SizedBox(height: 10),
 
-                            // Sign up with google or facebook part
+                            // Continue with google
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
