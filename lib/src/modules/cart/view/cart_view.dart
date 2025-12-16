@@ -215,7 +215,7 @@ class _CartViewState extends State<CartView> {
             height: 50,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                backgroundColor: Colors.greenAccent,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               // --- 3. LOGIC CHUYỂN TRANG THANH TOÁN ---

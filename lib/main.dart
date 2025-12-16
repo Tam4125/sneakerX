@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sneakerx/src/modules/profile/view/profile_view.dart';
 
 
 import 'src/modules/product_detail/view/product_detail_view.dart';
@@ -21,7 +22,7 @@ class NeakerXApp extends StatelessWidget {
         fontFamily: 'Roboto',
       ),
       // Đây là nơi bảo Flutter chạy màn hình mới của chúng ta
-      home: ProductDetailView(),
+      home: ProfileView(),
     );
   }
 }

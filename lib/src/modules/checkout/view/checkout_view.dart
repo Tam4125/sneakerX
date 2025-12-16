@@ -99,7 +99,7 @@ class _CheckoutViewState extends State<CheckoutView> {
       color: Colors.white, margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
         onTap: _showEditAddressDialog, // <--- BẮT SỰ KIỆN TẠI ĐÂY
-        leading: const Icon(Icons.location_on_outlined, color: Color(0xFF8B5FBF)),
+        leading: const Icon(Icons.location_on_outlined, color: Colors.green,),
         title: const Text("Địa chỉ nhận hàng", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
         subtitle: Text("$_customerName | $_phoneNumber\n$_address"),
         trailing: const Icon(Icons.chevron_right, color: Colors.grey),

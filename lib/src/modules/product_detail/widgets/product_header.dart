@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/product_image.dart';
 import '../../../config/app_colors.dart';
+import 'product_video_player.dart'; // <--- NHỚ IMPORT FILE VỪA TẠO
 
-// Chuyển thành StatefulWidget
 class ProductHeader extends StatefulWidget {
   final List<ProductImage> images;
 
@@ -13,7 +13,6 @@ class ProductHeader extends StatefulWidget {
 }
 
 class _ProductHeaderState extends State<ProductHeader> {
-  // Biến theo dõi trang hiện tại
   int _currentPage = 0;
 
   @override
@@ -22,76 +21,62 @@ class _ProductHeaderState extends State<ProductHeader> {
       children: [
         Stack(
           children: [
-            // 1. Phần PageView lướt ảnh
+            // 1. PAGEVIEW LƯỚT ẢNH & VIDEO
             Container(
-              height: 350, // Tăng chiều cao một chút cho đẹp
+              height: 350,
               width: double.infinity,
               color: Colors.grey[200],
               child: PageView.builder(
                 itemCount: widget.images.length,
                 onPageChanged: (index) {
                   setState(() {
-                    _currentPage = index; // Cập nhật trang hiện tại khi lướt
+                    _currentPage = index;
                   });
                 },
                 itemBuilder: (context, index) {
+                  final String url = widget.images[index].imageUrl;
+
+                  // --- LOGIC KIỂM TRA VIDEO ---
+                  // Cách 1: Kiểm tra đuôi file (mp4, mov, avi...)
+                  if (url.endsWith('.mp4')) {
+                    return ProductVideoPlayer(
+                      videoUrl: url,
+                      // Nếu url bắt đầu bằng 'assets/' thì là file nội bộ, ngược lại là link mạng
+                      isLocalAsset: url.startsWith('assets/'),
+                    );
+                  }
+
+                  // --- LOGIC HIỂN THỊ ẢNH ---
                   return Image.network(
-                    widget.images[index].imageUrl,
+                    url,
                     fit: BoxFit.cover,
-                    // Thêm loading builder để tránh lỗi khi mạng chậm
                     loadingBuilder: (ctx, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return const Center(child: CircularProgressIndicator());
                     },
-                    errorBuilder: (ctx, err, stackTrace) => const Icon(Icons.error),
+                    errorBuilder: (ctx, err, stackTrace) => const Center(
+                        child: Icon(Icons.broken_image, size: 50, color: Colors.grey)),
                   );
                 },
               ),
             ),
 
-            // Nút Back
+            // 2. INDICATORS (DẤU CHẤM TRANG)
             Positioned(
-              top: 40, left: 10,
-              child: CircleAvatar(
-                backgroundColor: Colors.black45,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () {},
-                ),
-              ),
-            ),
-
-            // Nút Giỏ hàng
-            Positioned(
-              top: 40, right: 10,
-              child: CircleAvatar(
-                backgroundColor: Colors.black45,
-                child: IconButton(
-                  icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
-                  onPressed: () {},
-                ),
-              ),
-            ),
-
-            // 2. Phần dấu chấm chỉ báo (Indicators) ở góc dưới ảnh
-            Positioned(
-              bottom: 10,
-              left: 0,
-              right: 0,
+              bottom: 10, left: 0, right: 0,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: widget.images.asMap().entries.map((entry) {
                   int idx = entry.key;
-                  // Kiểm tra xem có phải trang hiện tại không
                   bool isActive = idx == _currentPage;
                   return Container(
-                    width: isActive ? 12.0 : 8.0, // Trang hiện tại thì chấm to hơn
+                    width: isActive ? 12.0 : 8.0,
                     height: 8.0,
                     margin: const EdgeInsets.symmetric(horizontal: 4.0),
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      // Trang hiện tại màu trắng, trang khác màu xám
-                      color: isActive ? Colors.white : Colors.white.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                        color: isActive ? Colors.white : Colors.white.withOpacity(0.5),
+                        border: Border.all(color: Colors.black12)
                     ),
                   );
                 }).toList(),
@@ -100,10 +85,10 @@ class _ProductHeaderState extends State<ProductHeader> {
           ],
         ),
 
-        // Thanh Flash Sale (Giữ nguyên)
+        // 3. FLASHSALE BAR
         Container(
           height: 40,
-          color: AppColors.flashSale,
+          color: const Color(0xFF86f4b5), // Màu cam Flashsale
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
