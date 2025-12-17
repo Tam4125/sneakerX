@@ -50,7 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
         height: double.infinity,
         width: double.infinity,
         color: Colors.white,
-        child: SignInScreen()
+        child: IntroductionScreen()
       )
     );
   }
