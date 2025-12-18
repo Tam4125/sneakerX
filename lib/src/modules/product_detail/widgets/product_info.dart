@@ -1,11 +1,14 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
-import '../../../data/models/product.dart';
+import '../models/product_detail.dart';
 // import '../../../config/app_colors.dart'; // Có thể bỏ nếu không dùng màu từ file này
 
 class ProductInfo extends StatelessWidget {
-  final Product product;
+  final ProductDetail product;
+  final double price;
 
-  const ProductInfo({Key? key, required this.product}) : super(key: key);
+  const ProductInfo({Key? key, required this.product, required this.price}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +34,7 @@ class ProductInfo extends StatelessWidget {
             children: [
               // Giá tiền (Màu xanh lá đậm hơn chút cho nổi bật)
               Text(
-                product.formattedPrice,
+                product.formatCurrency(price),
                 style: const TextStyle(
                   color: Color(0xFF4CAF50), // Màu xanh lá giống Shopee/Lazada
                   fontSize: 24, // Tăng kích thước font một chút

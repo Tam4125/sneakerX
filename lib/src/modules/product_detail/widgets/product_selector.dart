@@ -1,6 +1,6 @@
 // File: src/modules/product_detail/widgets/product_selector.dart
 import 'package:flutter/material.dart';
-import '../../../data/models/product_variant.dart';
+import '../models/product_variant.dart';
 import '../../../config/app_colors.dart';
 
 // Đổi thành StatefulWidget để lưu trạng thái (Size đang chọn, Số lượng...)

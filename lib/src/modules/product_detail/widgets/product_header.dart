@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/product_image.dart';
+import '../models/product_image.dart';
 import '../../../config/app_colors.dart';
 import 'product_video_player.dart'; // <--- NHỚ IMPORT FILE VỪA TẠO
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../data/datasources/mock_product_data.dart';
+import 'package:sneakerx/src/modules/product_detail/models/product_detail.dart';
+import 'package:sneakerx/src/modules/product_detail/models/product_variant.dart';
+import 'package:sneakerx/src/modules/product_detail/services/product_service.dart';
 import '../../../config/app_colors.dart';
 import '../widgets/product_header.dart';
 import '../widgets/product_info.dart';
@@ -9,14 +11,26 @@ import '../widgets/bottom_action_bar.dart';
 import '../widgets/related_products.dart';
 import '../../cart/view/cart_view.dart';
 
-class ProductDetailView extends StatelessWidget {
-  // Lấy dữ liệu từ Mock Data
-  final product = MockProductData.product;
-  final images = MockProductData.images;
-  final variants = MockProductData.variants;
-  final relatedProducts = MockProductData.relatedProducts;
+class ProductDetailView extends StatefulWidget {
+  final int productId;
+  const ProductDetailView({super.key, required this.productId});
 
-  ProductDetailView({Key? key}) : super(key: key);
+  @override
+  State<ProductDetailView> createState() => _ProductDetailViewState();
+}
+
+class _ProductDetailViewState extends State<ProductDetailView> {
+  final ProductService _productService = ProductService();
+  late Future<ProductDetail?> _productFuture;
+
+  // State to track selected variant (for price calculation)
+  ProductVariant? _selectedVariant;
+
+  @override
+  void initState() {
+    super.initState();
+    _productFuture = _productService.getProductById(widget.productId);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,92 +60,103 @@ class ProductDetailView extends StatelessWidget {
             ),
             child: IconButton(
               icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black),
-              onPressed: () {
-                _navigateToCart(context);
-              },
+              onPressed: () {},
             ),
           ),
         ],
       ),
 
+      body: FutureBuilder<ProductDetail?>(
+        future: _productFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          } else if (!snapshot.hasData || snapshot.data == null) {
+            return const Center(child: Text("Product not found"));
+          }
 
-      body: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ProductHeader(images: images),
+          final product = snapshot.data!;
+          final images = product.images;
+          final variants = product.variants;
+          final currentVariant = _selectedVariant ?? (variants.isNotEmpty ? variants.first : null);
 
-            ProductInfo(product: product),
-            ProductSelector(variants: variants),
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ProductHeader(images: images),
+                ProductInfo(product: product, price: currentVariant!.price,),
+                ProductSelector(variants: variants),
 
-            const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-            // Các mục thông tin mở rộng
-            InfoAccordion(
-              title: "Hướng dẫn chọn size",
-              content: "Để chọn size chuẩn, vui lòng đo chiều dài bàn chân từ gót đến ngón cái:\n- Chân 23cm: Size 37\n- Chân 23.5cm: Size 38\n- Chân 24cm: Size 39\n- Chân 25cm: Size 40\nNếu chân bè ngang, bạn nên tăng thêm 1 size để thoải mái hơn.",
+                // Các mục thông tin mở rộng
+                InfoAccordion(
+                  title: "Hướng dẫn chọn size",
+                  content: "Để chọn size chuẩn, vui lòng đo chiều dài bàn chân từ gót đến ngón cái:\n- Chân 23cm: Size 37\n- Chân 23.5cm: Size 38\n- Chân 24cm: Size 39\n- Chân 25cm: Size 40\nNếu chân bè ngang, bạn nên tăng thêm 1 size để thoải mái hơn.",
+                ),
+                InfoAccordion(
+                  title: "Thông số và mô tả",
+                  content: product.description,
+                ),
+                InfoAccordion(
+                  title: "Chăm sóc",
+                  content: "- Không giặt giày bằng máy giặt.\n- Tránh phơi trực tiếp dưới ánh nắng gắt.\n- Nên dùng khăn ẩm hoặc dung dịch vệ sinh giày chuyên dụng để lau vết bẩn.\n- Giữ giày ở nơi khô thoáng để tránh ẩm mốc.",
+                ),
+                InfoAccordion(
+                  title: "Đánh giá sản phẩm",
+                  content: "⭐️ 4.8/5 (1034 đánh giá)\n\nUser1: Giày đẹp, êm chân, giao hàng nhanh.\nUser2: Đúng mô tả, shop tư vấn nhiệt tình.\nUser3: Hơi rộng một chút nhưng đi tất dày vào là vừa.",
+                ),
+
+                // Danh sách sản phẩm khác
+                // RelatedProducts(products: relatedProducts),
+
+                // Khoảng trống dưới cùng
+                const SizedBox(height: 100),
+              ],
             ),
-            InfoAccordion(
-              title: "Thông số và mô tả",
-              content: "${product.description}\n\n- Xuất xứ: Việt Nam\n- Chất liệu: Da PU cao cấp\n- Chiều cao đế: 3cm\n- Bảo hành: 6 tháng keo đế.",
-            ),
-            InfoAccordion(
-              title: "Chăm sóc",
-              content: "- Không giặt giày bằng máy giặt.\n- Tránh phơi trực tiếp dưới ánh nắng gắt.\n- Nên dùng khăn ẩm hoặc dung dịch vệ sinh giày chuyên dụng để lau vết bẩn.\n- Giữ giày ở nơi khô thoáng để tránh ẩm mốc.",
-            ),
-            InfoAccordion(
-              title: "Đánh giá sản phẩm",
-              content: "⭐️ 4.8/5 (1034 đánh giá)\n\nUser1: Giày đẹp, êm chân, giao hàng nhanh.\nUser2: Đúng mô tả, shop tư vấn nhiệt tình.\nUser3: Hơi rộng một chút nhưng đi tất dày vào là vừa.",
-            ),
-
-            // Danh sách sản phẩm khác
-            RelatedProducts(products: relatedProducts),
-
-            // Khoảng trống dưới cùng
-            const SizedBox(height: 100),
-          ],
-        ),
-      ),
-
-
-      bottomNavigationBar: BottomActionBar(
-        product: product,
-        variants: variants,
-        images: images,
-      ),
+          );
+        },
+      )
+      // bottomNavigationBar: BottomActionBar(
+      //   product: product,
+      //   variants: variants,
+      //   images: images,
+      // ),
     );
   }
 
-  // --- HÀM XỬ LÝ CHUYỂN TRANG GIỎ HÀNG ---
-  void _navigateToCart(BuildContext context) {
-    // Tạo dữ liệu giả lập giỏ hàng dựa trên sản phẩm hiện tại
-    final List<CartItemModel> fakeCartData = [
-      CartItemModel(
-        name: product.name,
-        price: product.price,
-        imageUrl: images.isNotEmpty ? images[0].imageUrl : "", // Lấy ảnh đầu tiên
-        size: "42",
-        colorName: "Cam/Đen",
-        quantity: 1,
-      ),
-      // Thêm thử 1 sản phẩm gợi ý vào giỏ
-      if (relatedProducts.isNotEmpty)
-        CartItemModel(
-          name: relatedProducts[0].name,
-          price: relatedProducts[0].price,
-          imageUrl: relatedProducts[0].imageUrl,
-          size: "40",
-          colorName: "Mặc định",
-          quantity: 2,
-        ),
-    ];
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CartView(cartItems: fakeCartData),
-      ),
-    );
-  }
+  // // --- HÀM XỬ LÝ CHUYỂN TRANG GIỎ HÀNG ---
+  // void _navigateToCart(BuildContext context) {
+  //   // Tạo dữ liệu giả lập giỏ hàng dựa trên sản phẩm hiện tại
+  //   final List<CartItemModel> fakeCartData = [
+  //     CartItemModel(
+  //       name: product.name,
+  //       price: product.price,
+  //       imageUrl: images.isNotEmpty ? images[0].imageUrl : "", // Lấy ảnh đầu tiên
+  //       size: "42",
+  //       colorName: "Cam/Đen",
+  //       quantity: 1,
+  //     ),
+  //     // Thêm thử 1 sản phẩm gợi ý vào giỏ
+  //     if (relatedProducts.isNotEmpty)
+  //       CartItemModel(
+  //         name: relatedProducts[0].name,
+  //         price: relatedProducts[0].price,
+  //         imageUrl: relatedProducts[0].imageUrl,
+  //         size: "40",
+  //         colorName: "Mặc định",
+  //         quantity: 2,
+  //       ),
+  //   ];
+  //
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => CartView(cartItems: fakeCartData),
+  //     ),
+  //   );
 }

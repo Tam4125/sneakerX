@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../checkout/view/checkout_view.dart';
 
 // Import model sản phẩm gốc
-import '../../../data/models/product.dart';
+import '../../product_detail/models/product_detail.dart';
 
 // --- MODEL RIÊNG CHO CART ---
 // (Mình đưa lên đầu hoặc để cuối đều được, nhưng phải public để các file khác gọi được)
