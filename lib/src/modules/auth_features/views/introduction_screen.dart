@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sneakerX/src/modules/auth_features/views/general_button.dart';
 import 'package:video_player/video_player.dart';
 
 class IntroductionScreen extends StatefulWidget {
@@ -138,8 +137,7 @@ class _IntroductionScreenState extends State<IntroductionScreen> {
                           SizedBox(height: 10,),
 
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.end
-                            ,
+                            mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               TextButton(
                                 child: Text(

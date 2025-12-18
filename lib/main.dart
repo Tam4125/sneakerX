@@ -1,57 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:sneakerX/src/modules/auth_features/views/introduction_screen.dart';
-import 'package:sneakerX/src/modules/auth_features/views/sign_in.dart';
-import 'package:sneakerX/src/modules/auth_features/views/sign_up.dart';
+import 'package:sneakerx/src/modules/auth_features/views/introduction_screen.dart';
+import 'package:sneakerx/src/modules/auth_features/views/sign_in.dart';
+import 'package:sneakerx/src/modules/auth_features/views/sign_up.dart';
+import 'src/modules/product_detail/view/product_detail_view.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const NeakerXApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class NeakerXApp extends StatelessWidget {
+  const NeakerXApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'SneakerX',
+      title: 'NeakerX',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green, brightness: Brightness.dark),
+        useMaterial3: true,
+        primarySwatch: Colors.blue,
+        fontFamily: 'Roboto',
       ),
-      home: const MyHomePage(title: 'SneakerX Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application.
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      body: Container(
-        height: double.infinity,
-        width: double.infinity,
-        color: Colors.white,
-        child: IntroductionScreen()
-      )
+      home: SignInScreen(),
     );
   }
 }

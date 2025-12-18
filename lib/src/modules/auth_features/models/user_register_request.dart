@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class UserRegisterRequest {
   final String username;
   final String email;

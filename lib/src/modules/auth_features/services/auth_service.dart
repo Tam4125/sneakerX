@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:sneakerX/src/modules/auth_features/models/auth_response.dart';
-import 'package:sneakerX/src/modules/auth_features/models/user_register_request.dart';
-import 'package:sneakerX/src/modules/auth_features/models/user_sign_in_request.dart';
+import 'package:sneakerx/src/modules/auth_features/models/auth_response.dart';
+import 'package:sneakerx/src/modules/auth_features/models/user_register_request.dart';
+import 'package:sneakerx/src/modules/auth_features/models/user_sign_in_request.dart';
 
 class AuthService {
 

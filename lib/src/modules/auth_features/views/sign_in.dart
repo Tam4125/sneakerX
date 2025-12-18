@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sneakerX/src/modules/auth_features//views/general_button.dart';
-import 'package:sneakerX/src/modules/auth_features/models/user_sign_in_request.dart';
-import 'package:sneakerX/src/modules/auth_features/services/auth_service.dart';
-import 'package:sneakerX/src/modules/auth_features/views/introduction_part.dart';
-import 'package:sneakerX/src/modules/auth_features/views/text_field.dart';
+import 'package:sneakerx/src/modules/auth_features/models/user_sign_in_request.dart';
+import 'package:sneakerx/src/modules/auth_features/services/auth_service.dart';
+import 'package:sneakerx/src/modules/auth_features/views/general_button.dart';
+import 'package:sneakerx/src/modules/auth_features/views/introduction_part.dart';
+import 'package:sneakerx/src/modules/auth_features/views/text_field.dart';
 
 
 // CLASS 1: The Configuration (Public)
