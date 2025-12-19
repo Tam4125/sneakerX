@@ -83,7 +83,7 @@ class _ShopDashboardScreenState extends State<ShopDashboardScreen> {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundImage: NetworkImage(MockShopData.shopImage),
+                  backgroundImage: NetworkImage(MockShopData.shopLogo),
                 ),
                 Text(
                   MockShopData.shopName,
@@ -94,8 +94,8 @@ class _ShopDashboardScreenState extends State<ShopDashboardScreen> {
                   ),
                 ),
                 const Icon(Icons.arrow_outward),
-              ],
-            ),
+                ],
+              ),
             ),
           ),
         ],
@@ -108,7 +108,7 @@ class _ShopDashboardScreenState extends State<ShopDashboardScreen> {
             child: SingleChildScrollView(
               child: DashboardCard(
                 onTap: () => _showMessage('Dashboard statistics clicked'),
-                followers: MockShopData.followers,
+                followers: MockShopData.followersCount,
                 revenue: MockShopData.revenue,
                 returnRate: MockShopData.returnRate,
                 reviewCount: MockShopData.reviewCount,
@@ -151,16 +151,14 @@ class _ShopDashboardScreenState extends State<ShopDashboardScreen> {
                         child: BottomNavButton(
                           icon: Icons.inventory_2_outlined,
                           label: 'Sản phẩm của tôi',
-                          onPressed:() =>  context.go('/productlist'),
+                          onPressed:() =>  context.go('/productlist/1'), //should be /productlist/${widget.shopId} or sum like that. Depends lol
                         ),
                       ),
                       Expanded(
                         child: BottomNavButton(
                           icon: Icons.account_balance_wallet_outlined,
                           label: 'Tài chính',
-                          onPressed: () {
-                            _showMessage('Navigated to finance');
-                          },
+                          onPressed: () => context.go('/finance'),
                         ),
                       ),
                       Expanded(
@@ -168,7 +166,7 @@ class _ShopDashboardScreenState extends State<ShopDashboardScreen> {
                           icon: Icons.trending_up,
                           label: 'Hiệu quả bán hàng',
                           onPressed: () {
-                            _showMessage('Navigated to performance');
+                            _showMessage('under construction 👷👷‍♂️👷‍♀️');
                           },
                         ),
                       ),

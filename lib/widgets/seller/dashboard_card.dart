@@ -66,7 +66,6 @@ class DashboardCard extends StatelessWidget {
     );
   }
 
-
   Widget _buildStatItem(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,7 +73,7 @@ class DashboardCard extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.robotoMono(
-            color: Colors.grey[400],
+            color: Colors.white,
             fontSize: 14,
             letterSpacing: -0.6,
           ),
