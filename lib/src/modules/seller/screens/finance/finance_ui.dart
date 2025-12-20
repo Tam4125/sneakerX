@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:snkrxx/data/mock_transaction_data.dart';
-import 'package:snkrxx/widgets/finance_card.dart';
-import 'package:snkrxx/widgets/icon_button_widget.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:snkrxx/widgets/finance/finance_card.dart';
+import 'package:snkrxx/widgets/seller/icon_button_widget.dart';
 
 
 class FinanceUi extends StatefulWidget {
