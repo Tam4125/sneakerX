@@ -1,7 +1,7 @@
 import 'dart:ffi';
 
 import 'package:flutter/material.dart';
-import '../models/product_detail.dart';
+import '../../../models/product_detail.dart';
 // import '../../../config/app_colors.dart'; // Có thể bỏ nếu không dùng màu từ file này
 
 class ProductInfo extends StatelessWidget {
@@ -30,23 +30,22 @@ class ProductInfo extends StatelessWidget {
         children: [
           // Dòng giá tiền và thông tin bán
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center, // Căn giữa theo chiều dọc
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Giá tiền (Màu xanh lá đậm hơn chút cho nổi bật)
               Text(
                 product.formatCurrency(price),
                 style: const TextStyle(
-                  color: Color(0xFF4CAF50), // Màu xanh lá giống Shopee/Lazada
-                  fontSize: 24, // Tăng kích thước font một chút
+                  color: Color(0xFF4CAF50),
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(width: 8),
 
-              // Giá gốc gạch ngang (Thêm vào cho giống ảnh mẫu nếu có data)
-              const Text(
-                  "2.800.000đ",
-                  style: TextStyle(
+              // Giá gốc gạch ngang
+              Text(
+                  product.formatCurrency(price*2),
+                  style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 12,
                       decoration: TextDecoration.lineThrough
@@ -70,24 +69,24 @@ class ProductInfo extends StatelessWidget {
               const Spacer(),
 
               // Đã bán + Icon tim
-              Row(
-                children: [
-                  Text(
-                      "Đã bán ${product.soldCount ~/ 1000}k+",
-                      style: const TextStyle(color: Colors.black54, fontSize: 12)
-                  ),
-                  const SizedBox(width: 8),
-                  // Nút tim tròn trắng mờ
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.6),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.favorite_border, size: 16, color: Colors.grey),
-                  )
-                ],
-              ),
+              // Row(
+              //   children: [
+              //     Text(
+              //         "Đã bán ${product.soldCount ~/ 1000}k+",
+              //         style: const TextStyle(color: Colors.black54, fontSize: 12)
+              //     ),
+              //     const SizedBox(width: 8),
+              //     // Nút tim tròn trắng mờ
+              //     Container(
+              //       padding: const EdgeInsets.all(6),
+              //       decoration: BoxDecoration(
+              //         color: Colors.white.withOpacity(0.6),
+              //         shape: BoxShape.circle,
+              //       ),
+              //       child: const Icon(Icons.favorite_border, size: 16, color: Colors.grey),
+              //     )
+              //   ],
+              // ),
             ],
           ),
 
@@ -110,7 +109,7 @@ class ProductInfo extends StatelessWidget {
               const Spacer(),
               const Icon(Icons.star, color: Colors.amber, size: 14),
               Text(
-                  " ${product.rating} (1034)",
+                  " ${product.rating} (${product.reviews.length} đánh giá)",
                   style: const TextStyle(color: Colors.grey, fontSize: 12)
               ),
             ],

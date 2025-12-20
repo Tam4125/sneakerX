@@ -5,14 +5,12 @@ class GeneralButton extends StatelessWidget {
   final String description;
   final int color;
   final VoidCallback? onPressed;
-  final bool isLoading;
 
   const GeneralButton({
     Key? key,
     required this.description,
     required this.color,
     required this.onPressed,
-    this.isLoading = false
   }) : super(key:key);
 
   @override
@@ -21,7 +19,7 @@ class GeneralButton extends StatelessWidget {
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: (isLoading || onPressed == null) ? null : onPressed,
+        onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: Color(color),
           shape: RoundedRectangleBorder(
@@ -29,9 +27,9 @@ class GeneralButton extends StatelessWidget {
           )
         ),
         child: Text(description, style: GoogleFonts.inter(
-          color: Color(0xFF262626),
-          fontWeight: FontWeight.bold,
-          fontSize: 20
+            color: Color(0xFF262626),
+            fontWeight: FontWeight.bold,
+            fontSize: 20
         ),),
       ),
     );

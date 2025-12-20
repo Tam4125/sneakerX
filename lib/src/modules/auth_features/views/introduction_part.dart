@@ -6,13 +6,14 @@ class IntroductionPart extends StatelessWidget {
   // 1. Fields: All variables in a StatelessWidget must be 'final'.
   final String description;
   final String? message;
-  // final VoidCallback onPress;
+  final VoidCallback onPress;
 
   // 2. Constructor: Use 'const' for performance.
   // We use 'required' for mandatory data and set defaults for optional ones.
   const IntroductionPart({
     super.key,
     required this.description,
+    required this.onPress,
     this.message
     // required this.onPress
   });
@@ -36,9 +37,7 @@ class IntroductionPart extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () {
-                print("He he");
-              },
+              onPressed: onPress,
               padding: EdgeInsets.zero,
               alignment: Alignment.centerLeft,
             ),

@@ -1,30 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:sneakerx/src/modules/cart/models/cart_model.dart';
 
-// --- 1. Import trang Checkout ---
 import '../../checkout/view/checkout_view.dart';
 
-// Import model sản phẩm gốc
-import '../../product_detail/models/product_detail.dart';
-
-// --- MODEL RIÊNG CHO CART ---
-// (Mình đưa lên đầu hoặc để cuối đều được, nhưng phải public để các file khác gọi được)
-class CartItemModel {
-  final String name;
-  final double price;
-  final String imageUrl;
-  final String size;
-  final String colorName;
-  int quantity;
-
-  CartItemModel({
-    required this.name,
-    required this.price,
-    required this.imageUrl,
-    required this.size,
-    required this.colorName,
-    this.quantity = 1,
-  });
-}
 
 class CartView extends StatefulWidget {
   final List<CartItemModel> cartItems;

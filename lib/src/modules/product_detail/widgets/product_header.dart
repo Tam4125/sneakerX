@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/product_image.dart';
+import '../../../models/product_image.dart';
 import '../../../config/app_colors.dart';
 import 'product_video_player.dart'; // <--- NHỚ IMPORT FILE VỪA TẠO
 
@@ -38,13 +38,13 @@ class _ProductHeaderState extends State<ProductHeader> {
 
                   // --- LOGIC KIỂM TRA VIDEO ---
                   // Cách 1: Kiểm tra đuôi file (mp4, mov, avi...)
-                  if (url.endsWith('.mp4')) {
-                    return ProductVideoPlayer(
-                      videoUrl: url,
-                      // Nếu url bắt đầu bằng 'assets/' thì là file nội bộ, ngược lại là link mạng
-                      isLocalAsset: url.startsWith('assets/'),
-                    );
-                  }
+                  // if (url.endsWith('.mp4')) {
+                  //   return ProductVideoPlayer(
+                  //     videoUrl: url,
+                  //     // Nếu url bắt đầu bằng 'assets/' thì là file nội bộ, ngược lại là link mạng
+                  //     isLocalAsset: url.startsWith('assets/'),
+                  //   );
+                  // }
 
                   // --- LOGIC HIỂN THỊ ẢNH ---
                   return Image.network(

@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:sneakerx/src/modules/product_detail/models/product_detail.dart';
-import 'package:sneakerx/src/modules/product_detail/models/product_variant.dart';
-import 'package:sneakerx/src/modules/product_detail/services/product_service.dart';
+import 'package:sneakerx/src/models/product_detail.dart';
+import 'package:sneakerx/src/models/product_variant.dart';
+import 'package:sneakerx/src/services/product_service.dart';
 import '../../../config/app_colors.dart';
 import '../widgets/product_header.dart';
 import '../widgets/product_info.dart';
 import '../widgets/product_selector.dart';
 import '../widgets/info_accordion.dart';
 import '../widgets/bottom_action_bar.dart';
-import '../widgets/related_products.dart';
-import '../../cart/view/cart_view.dart';
 
 class ProductDetailView extends StatefulWidget {
   final int productId;
@@ -108,14 +106,16 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                 ),
                 InfoAccordion(
                   title: "Đánh giá sản phẩm",
-                  content: "⭐️ 4.8/5 (1034 đánh giá)\n\nUser1: Giày đẹp, êm chân, giao hàng nhanh.\nUser2: Đúng mô tả, shop tư vấn nhiệt tình.\nUser3: Hơi rộng một chút nhưng đi tất dày vào là vừa.",
+                  content: "⭐️ ${product.rating}/5.0 (${product.reviews.length} đánh giá)",
                 ),
 
                 // Danh sách sản phẩm khác
                 // RelatedProducts(products: relatedProducts),
 
                 // Khoảng trống dưới cùng
-                const SizedBox(height: 100),
+                const SizedBox(height: 20),
+                BottomActionBar(product: product),
+                const SizedBox(height: 50,)
               ],
             ),
           );

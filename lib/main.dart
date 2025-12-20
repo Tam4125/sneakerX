@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sneakerx/src/modules/auth_features/views/introduction_screen.dart';
 import 'package:sneakerx/src/modules/auth_features/views/sign_in.dart';
 import 'package:sneakerx/src/modules/auth_features/views/sign_up.dart';
+import 'package:sneakerx/src/modules/homepage/screens/home_screen.dart';
+import 'package:sneakerx/src/screens/main_screen.dart';
+import 'package:sneakerx/src/utils/auth_provider.dart';
 import 'src/modules/product_detail/view/product_detail_view.dart';
 
 void main() {
-  runApp(const NeakerXApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()..tryAutoLogin()),
+      ],
+      child: const NeakerXApp(),
+    )
+  );
 }
 
 class NeakerXApp extends StatelessWidget {
@@ -21,7 +32,7 @@ class NeakerXApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         fontFamily: 'Roboto',
       ),
-      home: SignInScreen(),
+      home: MainScreen(),
     );
   }
 }

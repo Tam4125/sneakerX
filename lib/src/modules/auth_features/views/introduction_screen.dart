@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sneakerx/src/modules/auth_features/views/sign_in.dart';
+import 'package:sneakerx/src/modules/auth_features/views/sign_up.dart';
 import 'package:video_player/video_player.dart';
 
 class IntroductionScreen extends StatefulWidget {
@@ -123,7 +125,10 @@ class _IntroductionScreenState extends State<IntroductionScreen> {
                                   borderRadius: BorderRadius.circular(12)
                                 )
                               ),
-                              onPressed: () {},
+                              onPressed: () {Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SignInScreen()),
+                              );},
                               child: Text(
                                 "Sign in",
                                 style: GoogleFonts.inter(
@@ -148,7 +153,12 @@ class _IntroductionScreenState extends State<IntroductionScreen> {
                                     color: Colors.black
                                   ),
                                 ),
-                                onPressed: () {},
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => SignUpScreen())
+                                  );
+                                },
                               )
                             ],
                           )

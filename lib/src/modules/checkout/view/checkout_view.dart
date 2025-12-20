@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:sneakerx/src/modules/cart/models/cart_model.dart';
 
 // 1. IMPORT CÁC FILE TRONG FOLDER CỦA BẠN
 import '../models/checkout_models.dart';
 import '../widgets/voucher_bottom_sheet.dart';
 import '../widgets/payment_method_sheet.dart';
 import '../widgets/shipping_method_sheet.dart';
-
-// Import Cart
-import '../../cart/view/cart_view.dart';
 
 class CheckoutView extends StatefulWidget {
   final List<CartItemModel> checkoutItems;

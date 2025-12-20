@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_response.dart';
 
 class ProfileHeader extends StatelessWidget {
-  const ProfileHeader({Key? key}) : super(key: key);
+  final UserSignInResponse user;
+  const ProfileHeader({
+    super.key,
+    required this.user
+});
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +56,7 @@ class ProfileHeader extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // 2. THÔNG TIN NGƯỜI DÙNG (ĐÃ SỬA ẢNH)
+          // 2. THÔNG TIN NGƯỜI DÙNG
           Row(
             children: [
               Stack(
@@ -84,7 +89,7 @@ class ProfileHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [const Text("huynhtranthengoc1207", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 20)), const SizedBox(width: 8), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Colors.white.withOpacity(1), borderRadius: BorderRadius.circular(20)), child: const Row(children: [Text("Bạc", style: TextStyle(color: Colors.black87, fontSize: 12, fontWeight: FontWeight.bold)), Icon(Icons.chevron_right, size: 16, color: Colors.black54)]))]),
+                    Row(children: [Text(user.username, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 20)), const SizedBox(width: 8), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Colors.white.withOpacity(1), borderRadius: BorderRadius.circular(20)), child: const Row(children: [Text("Bạc", style: TextStyle(color: Colors.black87, fontSize: 12, fontWeight: FontWeight.bold)), Icon(Icons.chevron_right, size: 16, color: Colors.black54)]))]),
                     const SizedBox(height: 8),
                     const Row(children: [Text("0 Người theo dõi", style: TextStyle(color: Colors.black, fontSize: 14)), SizedBox(width: 15), Text("12 Đang theo dõi", style: TextStyle(color: Colors.black, fontSize: 14))])
                   ],

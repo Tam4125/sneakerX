@@ -1,6 +1,6 @@
 // File: src/modules/product_detail/widgets/product_selector.dart
 import 'package:flutter/material.dart';
-import '../models/product_variant.dart';
+import '../../../models/product_variant.dart';
 import '../../../config/app_colors.dart';
 
 // Đổi thành StatefulWidget để lưu trạng thái (Size đang chọn, Số lượng...)
@@ -27,8 +27,8 @@ class _ProductSelectorState extends State<ProductSelector> {
   void initState() {
     super.initState();
     // Lọc data và chọn mặc định cái đầu tiên
-    _sizes = widget.variants.where((v) => v.variantType == 'size').map((v) => v.variantValue).toSet();
-    _colors = widget.variants.where((v) => v.variantType == 'color').map((v) => v.variantValue).toSet();
+    _sizes = widget.variants.where((v) => v.variantType == 'SIZE').map((v) => v.variantValue).toSet();
+    _colors = widget.variants.where((v) => v.variantType == 'COLOR').map((v) => v.variantValue).toSet();
 
     if (_sizes.isNotEmpty) _selectedSize = _sizes.first;
     if (_colors.isNotEmpty) _selectedColor = _colors.first;

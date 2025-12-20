@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sneakerx/src/modules/auth_features/models/user_sign_in_request.dart';
-import 'package:sneakerx/src/modules/auth_features/services/auth_service.dart';
+import 'package:provider/provider.dart';
+import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_request.dart';
+import 'package:sneakerx/src/modules/auth_features/views/general_button_loading.dart';
+import 'package:sneakerx/src/modules/auth_features/views/sign_up.dart';
+import 'package:sneakerx/src/modules/homepage/screens/home_screen.dart';
+import 'package:sneakerx/src/screens/main_screen.dart';
+import 'package:sneakerx/src/services/auth_service.dart';
 import 'package:sneakerx/src/modules/auth_features/views/general_button.dart';
 import 'package:sneakerx/src/modules/auth_features/views/introduction_part.dart';
 import 'package:sneakerx/src/modules/auth_features/views/text_field.dart';
+import 'package:sneakerx/src/utils/auth_provider.dart';
 
 
 // CLASS 1: The Configuration (Public)
@@ -40,51 +46,6 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
-  Future<void> _handleSignIn() async {
-    // 1. Validate inputs locally
-    if (!_formKey.currentState!.validate()) {
-      return;
-    };
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    // 2. Create Request Object
-    final request = UserSignInRequest(
-        identifier: _identifierController.text.trim(),
-        password: _passwordController.text
-    );
-
-    // 3. Call Backend
-    final result = await _authService.signInUser(request);
-
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    // 4. Show Result
-    if (result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Success: ${result.message}"),
-          backgroundColor: Colors.green,
-        ),
-      );
-      // Optional: Navigate to Login Screen
-      // Navigator.pop(context);
-    } else {
-      // This will show "Email already exists" or "Username already exists"
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,6 +59,7 @@ class _SignInScreenState extends State<SignInScreen> {
               IntroductionPart(
                 description: "Welcome Back!",
                 message: "Continue your adventure",
+                onPress: () {Navigator.pop(context);},
               ),
 
               // Form section
@@ -167,11 +129,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             ),
                             const SizedBox(height: 30),
 
-                            GeneralButton(
-                              description: "Sign In",
-                              color: 0xFFFFFFFF,
-                              onPressed: _handleSignIn,
-                            ),
+                            _loginButton(),
                             const SizedBox(height: 10),
 
                             Row(
@@ -186,7 +144,7 @@ class _SignInScreenState extends State<SignInScreen> {
                                         fontSize: 14
                                     ),
                                   ),
-                                  onPressed: () {print("hehe");},
+                                  onPressed: () {print("Upcoming feature");},
                                 ),
                               ],
                             ),
@@ -258,7 +216,13 @@ class _SignInScreenState extends State<SignInScreen> {
                                 ),
                                 TextButton(
                                   onPressed: () {
-                                    // Navigate to sign in screen
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          // Pass the current 'productId' object to the next screen
+                                            builder: (context) => SignUpScreen()
+                                        )
+                                    );
                                   },
                                   child: const Text(
                                     'Sign up',
@@ -282,5 +246,68 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
+  Widget _loginButton() {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, child) {
+        return _isLoading
+            ? GeneralButtonLoading()
+            : GeneralButton(
+          description: "Sign In",
+          color: 0xFFFFFFFF,
+          onPressed: auth.isLoading ? null : () async {
+            if (_formKey.currentState!.validate()) {
+              final request = UserSignInRequest(
+                  identifier: _identifierController.text.trim(),
+                  password: _passwordController.text
+              );
 
+              setState(() {
+                _isLoading = true;
+              });
+              // 2. Call the Login function
+              bool success = await auth.login(request);
+
+              setState(() {
+                _isLoading = false;
+              });
+
+              // 3. Handle Success/Failure
+              if (success) {
+                if (mounted) {
+                  // Close keyboard
+                  FocusScope.of(context).unfocus();
+
+                  // Show success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Welcome back, ${auth.currentUser?.username}!"),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+
+                  // Navigate to MainWrapper and remove back stack history
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MainScreen()),
+                        (route) => false,
+                  );
+                }
+              } else {
+                // 4. Handle Failure - Show API Error Message
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      // Use 'auth.errorMessage' from Provider
+                      content: Text(auth.errorMessage ?? "Login failed. Please try again."),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+          },
+        );
+      },
+    );
+  }
 }
