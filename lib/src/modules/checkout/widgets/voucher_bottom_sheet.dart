@@ -6,10 +6,10 @@ class VoucherBottomSheet extends StatelessWidget {
   final Function(VoucherModel) onVoucherSelected; // Hàm callback khi chọn
 
   VoucherBottomSheet({
-    Key? key,
+    super.key,
     required this.currentSubTotal,
     required this.onVoucherSelected,
-  }) : super(key: key);
+  });
 
   // Danh sách Voucher (Giả lập)
   final List<VoucherModel> _vouchers = [

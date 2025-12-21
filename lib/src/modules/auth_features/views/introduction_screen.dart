@@ -5,7 +5,7 @@ import 'package:sneakerx/src/modules/auth_features/views/sign_up.dart';
 import 'package:video_player/video_player.dart';
 
 class IntroductionScreen extends StatefulWidget {
-  const IntroductionScreen({Key? key}) : super(key: key);
+  const IntroductionScreen({super.key});
 
   @override
   State<IntroductionScreen> createState() => _IntroductionScreenState();

@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_request.dart';
 import 'package:sneakerx/src/modules/auth_features/views/general_button_loading.dart';
 import 'package:sneakerx/src/modules/auth_features/views/sign_up.dart';
-import 'package:sneakerx/src/modules/homepage/screens/home_screen.dart';
 import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/services/auth_service.dart';
 import 'package:sneakerx/src/modules/auth_features/views/general_button.dart';
@@ -17,7 +16,7 @@ import 'package:sneakerx/src/utils/auth_provider.dart';
 // This part is immutable (variables cannot change).
 // It effectively just holds the data passed in from the parent.
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({Key? key}) : super(key:key);
+  const SignInScreen({super.key});
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();

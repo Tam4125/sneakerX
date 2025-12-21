@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class OrderStatusBar extends StatelessWidget {
-  const OrderStatusBar({Key? key}) : super(key: key);
+  const OrderStatusBar({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,3 @@
-import 'package:sneakerx/src/models/user.dart';
 
 class ProductReview {
   final int reviewId;

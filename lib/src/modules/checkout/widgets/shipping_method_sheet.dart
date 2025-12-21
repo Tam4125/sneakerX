@@ -13,10 +13,10 @@ class ShippingMethodSheet extends StatelessWidget {
   ];
 
   ShippingMethodSheet({
-    Key? key,
+    super.key,
     required this.selectedShipping,
     required this.onShippingSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

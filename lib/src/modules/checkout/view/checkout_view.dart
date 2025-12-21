@@ -9,7 +9,7 @@ import '../widgets/shipping_method_sheet.dart';
 
 class CheckoutView extends StatefulWidget {
   final List<CartItemModel> checkoutItems;
-  const CheckoutView({Key? key, required this.checkoutItems}) : super(key: key);
+  const CheckoutView({super.key, required this.checkoutItems});
 
   @override
   State<CheckoutView> createState() => _CheckoutViewState();

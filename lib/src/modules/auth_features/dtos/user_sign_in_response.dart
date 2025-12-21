@@ -3,6 +3,7 @@ class UserSignInResponse {
   final String username;
   final String email;
   final String role;
+  final int? shopId;
   String accessToken; // The JWT
   String refreshToken;
 
@@ -13,6 +14,7 @@ class UserSignInResponse {
     required this.role,
     required this.accessToken,
     required this.refreshToken,
+    this.shopId
   });
 
   // Factory constructor to create a User from the Backend JSON 'data' field
@@ -22,6 +24,7 @@ class UserSignInResponse {
       username: json['username'] ?? '',
       email: json['email'] ?? '',
       role: json['role'] ?? 'BUYER',
+      shopId: json['shopId'],
       accessToken: json['accessToken'] ?? '',
       refreshToken: json['refreshToken'] ?? '',
     );

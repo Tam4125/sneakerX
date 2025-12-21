@@ -1,14 +1,13 @@
-import 'dart:ffi';
 
 import 'package:flutter/material.dart';
-import '../../../models/product_detail.dart';
-// import '../../../config/app_colors.dart'; // Có thể bỏ nếu không dùng màu từ file này
+import '../../../models/product.dart';
+// import '../../../config/app_config.dart'; // Có thể bỏ nếu không dùng màu từ file này
 
 class ProductInfo extends StatelessWidget {
-  final ProductDetail product;
+  final Product product;
   final double price;
 
-  const ProductInfo({Key? key, required this.product, required this.price}) : super(key: key);
+  const ProductInfo({super.key, required this.product, required this.price});
 
   @override
   Widget build(BuildContext context) {

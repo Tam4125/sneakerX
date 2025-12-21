@@ -4,7 +4,7 @@ import '../models/checkout_models.dart';
 class PaymentMethodSheet extends StatefulWidget {
   final Function(PaymentMethod, BankModel?) onMethodSelected;
 
-  const PaymentMethodSheet({Key? key, required this.onMethodSelected}) : super(key: key);
+  const PaymentMethodSheet({super.key, required this.onMethodSelected});
 
   @override
   State<PaymentMethodSheet> createState() => _PaymentMethodSheetState();

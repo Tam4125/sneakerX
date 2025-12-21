@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:sneakerx/src/models/product_detail.dart';
+import 'package:sneakerx/src/models/product.dart';
 import 'package:intl/intl.dart';
 import 'package:sneakerx/src/modules/product_detail/view/product_detail_view.dart';
 
 class ProductCard extends StatelessWidget {
-  final ProductDetail product;
+  final Product product;
 
   const ProductCard({
-    Key? key,
+    super.key,
     required this.product,
-  }) : super(key: key);
+  });
 
   String _formatPrice(double price) {
     final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);

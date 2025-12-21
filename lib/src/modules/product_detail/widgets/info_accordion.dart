@@ -4,7 +4,7 @@ class InfoAccordion extends StatefulWidget {
   final String title;
   final String? content;
 
-  const InfoAccordion({Key? key, required this.title, this.content}) : super(key: key);
+  const InfoAccordion({super.key, required this.title, this.content});
 
   @override
   State<InfoAccordion> createState() => _InfoAccordionState();

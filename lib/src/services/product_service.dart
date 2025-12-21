@@ -2,13 +2,13 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:sneakerx/src/utils/api_response.dart';
-import 'package:sneakerx/src/models/product_detail.dart';
+import 'package:sneakerx/src/models/product.dart';
 
 class ProductService {
   static const String baseUrl = "http://10.0.2.2:8080/products";
 
   // Fetch Product Detail by ID
-  Future<ProductDetail?> getProductById(int productId) async {
+  Future<Product?> getProductById(int productId) async {
     final url = Uri.parse("$baseUrl/$productId");
 
     try {
@@ -18,9 +18,9 @@ class ProductService {
         Map<String, dynamic> jsonMap = jsonDecode(response.body);
 
         // Parse the ApiResponse wrapper first
-        final apiResponse = ApiResponse<ProductDetail>.fromJson(
+        final apiResponse = ApiResponse<Product>.fromJson(
           jsonMap,
-          (data) => ProductDetail.fromJson(data as Map<String, dynamic>)
+          (data) => Product.fromJson(data as Map<String, dynamic>)
         );
 
         return apiResponse.data;
@@ -34,7 +34,7 @@ class ProductService {
   }
 
   // Fetch List of Popular Products
-  Future<List<ProductDetail>?> fetchPopularProducts({int page = 0, int size = 10}) async {
+  Future<List<Product>?> fetchPopularProducts({int page = 0, int size = 10}) async {
     final url = Uri.parse("$baseUrl/popular?page=$page&size=$size");
 
     try {
@@ -43,16 +43,17 @@ class ProductService {
         Map<String, dynamic> jsonMap = jsonDecode(response.body);
         final List list = jsonMap['data']['content'];
 
-        return list.map((data) => ProductDetail.fromJson(data)).toList();
+        return list.map((data) => Product.fromJson(data)).toList();
 
       }
     } catch (e) {
       throw Exception("Error fetching popular products: $e");
     }
+    return null;
   }
 
   // Fetch List of Favourite Products
-  Future<List<ProductDetail>?> fetchFavouriteProducts({int page = 0, int size = 10}) async {
+  Future<List<Product>?> fetchFavouriteProducts({int page = 0, int size = 10}) async {
     final url = Uri.parse("$baseUrl/popular?page=$page&size=$size");
 
     try {
@@ -61,11 +62,13 @@ class ProductService {
         Map<String, dynamic> jsonMap = jsonDecode(response.body);
         final List list = jsonMap['data']['content'];
 
-        return list.map((data) => ProductDetail.fromJson(data)).toList();
+        return list.map((data) => Product.fromJson(data)).toList();
 
       }
     } catch (e) {
       throw Exception("Error fetching favourite products: $e");
     }
+    return null;
   }
+
 }

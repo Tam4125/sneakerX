@@ -5,9 +5,9 @@ class BannerCard extends StatelessWidget {
   final BannerModel banner;
 
   const BannerCard({
-    Key? key,
+    super.key,
     required this.banner,
-  }) : super(key: key);
+  });
 
   Color _hexToColor(String hexString) {
     final buffer = StringBuffer();

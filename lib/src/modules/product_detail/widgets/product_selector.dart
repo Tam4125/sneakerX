@@ -1,13 +1,13 @@
 // File: src/modules/product_detail/widgets/product_selector.dart
 import 'package:flutter/material.dart';
 import '../../../models/product_variant.dart';
-import '../../../config/app_colors.dart';
+import '../../../config/app_config.dart';
 
 // Đổi thành StatefulWidget để lưu trạng thái (Size đang chọn, Số lượng...)
 class ProductSelector extends StatefulWidget {
   final List<ProductVariant> variants;
 
-  const ProductSelector({Key? key, required this.variants}) : super(key: key);
+  const ProductSelector({super.key, required this.variants});
 
   @override
   State<ProductSelector> createState() => _ProductSelectorState();
@@ -78,7 +78,7 @@ class _ProductSelectorState extends State<ProductSelector> {
                   padding: const EdgeInsets.all(2), // Viền
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: isSelected ? Border.all(color: AppColors.primary, width: 2) : null,
+                    border: isSelected ? Border.all(color: AppConfig.primary, width: 2) : null,
                   ),
                   child: CircleAvatar(
                     backgroundColor: Color(int.parse(c)),
@@ -101,14 +101,14 @@ class _ProductSelectorState extends State<ProductSelector> {
               return ChoiceChip(
                 label: Text(s),
                 selected: isSelected,
-                selectedColor: AppColors.primary, // Màu khi chọn
+                selectedColor: AppConfig.primary, // Màu khi chọn
                 backgroundColor: Colors.white,
                 labelStyle: TextStyle(
                     color: isSelected ? Colors.white : Colors.black,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
                 ),
                 shape: RoundedRectangleBorder(
-                    side: BorderSide(color: isSelected ? AppColors.primary : Colors.grey[300]!),
+                    side: BorderSide(color: isSelected ? AppConfig.primary : Colors.grey[300]!),
                     borderRadius: BorderRadius.circular(4)
                 ),
                 onSelected: (bool selected) {
@@ -130,7 +130,7 @@ class _ProductSelectorState extends State<ProductSelector> {
         width: 30, height: 30,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-            color: isGreen ? AppColors.primary : Colors.grey[200],
+            color: isGreen ? AppConfig.primary : Colors.grey[200],
             borderRadius: BorderRadius.circular(4)
         ),
         child: Text(text, style: TextStyle(color: isGreen ? Colors.white : Colors.black, fontSize: 18)),

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:sneakerx/src/models/product_detail.dart';
-import '../../../config/app_colors.dart';
+import 'package:sneakerx/src/models/product.dart';
+import '../../../config/app_config.dart';
 import 'add_to_cart_sheet.dart'; // Import file vừa tạo
 
 class BottomActionBar extends StatefulWidget {
-  final ProductDetail product;
+  final Product product;
 
   const BottomActionBar({
-    Key? key,
+    super.key,
     required this.product,
-  }) : super(key: key);
+  });
 
   @override
   State<BottomActionBar> createState() => _BottomActionBarState();
@@ -64,14 +64,14 @@ class _BottomActionBarState extends State<BottomActionBar> {
           const SizedBox(width: 10),
 
           // Nút Thêm Giỏ -> Gọi hàm hiển thị Sheet (False)
-          Expanded(child: _buildButton("Thêm vào giỏ", AppColors.secondary, () {
+          Expanded(child: _buildButton("Thêm vào giỏ", AppConfig.secondary, () {
             _showAddToCartSheet(context, isBuyNow: false);
           })),
 
           const SizedBox(width: 10),
 
           // Nút Mua Ngay -> Gọi hàm hiển thị Sheet (True)
-          Expanded(child: _buildButton("Mua ngay", AppColors.primary, () {
+          Expanded(child: _buildButton("Mua ngay", AppConfig.primary, () {
             _showAddToCartSheet(context, isBuyNow: true);
           })),
         ],

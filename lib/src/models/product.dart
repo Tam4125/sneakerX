@@ -1,24 +1,22 @@
-// 2. Product Detail (Matches ProductDetailResponse)
 import 'package:intl/intl.dart';
 import 'package:sneakerx/src/models/product_image.dart';
 import 'package:sneakerx/src/models/product_review.dart';
 import 'package:sneakerx/src/models/product_variant.dart';
 
-class ProductDetail {
+class Product {
   final int productId;
-  final int shopId;
   final int categoryId;
+  final int shopId;
   final String name;
   final String description;
   final double rating;
   final int soldCount;
   final DateTime createdAt;
-  final DateTime updatedAt;
   final List<ProductImage> images;
   final List<ProductVariant> variants;
   final List<ProductReview> reviews;
 
-  ProductDetail({
+  Product({
     required this.productId,
     required this.shopId,
     required this.categoryId,
@@ -30,11 +28,10 @@ class ProductDetail {
     required this.variants,
     required this.reviews,
     required this.createdAt,
-    required this.updatedAt
   });
 
-  factory ProductDetail.fromJson(Map<String, dynamic> json) {
-    return ProductDetail(
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
       productId: json['productId'],
       shopId: json['shopId'],
       categoryId: json['categoryId'] ?? 0,
@@ -52,7 +49,6 @@ class ProductDetail {
           ?.map((v) => ProductReview.fromJson(v))
           .toList() ?? [],
       createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toString()),
     );
 
   }
@@ -68,7 +64,6 @@ class ProductDetail {
       'status': "ACTIVE",
       'soldCount': soldCount,
       'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
     };
   }
 

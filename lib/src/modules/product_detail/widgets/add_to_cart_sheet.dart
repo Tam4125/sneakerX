@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:sneakerx/src/models/product_detail.dart';
-import '../../../config/app_colors.dart';
+import 'package:sneakerx/src/models/product.dart';
+import '../../../config/app_config.dart';
 
 class AddToCartSheet extends StatefulWidget {
-  final ProductDetail product;
+  final Product product;
   final bool isBuyNow;
 
   const AddToCartSheet({
-    Key? key,
+    super.key,
     required this.product,
     this.isBuyNow = false,
-  }) : super(key: key);
+  });
 
   @override
   State<AddToCartSheet> createState() => _AddToCartSheetState();
@@ -74,7 +74,7 @@ class _AddToCartSheetState extends State<AddToCartSheet> {
                     // const SizedBox(height: 4),
                     // Sửa hiển thị tên màu cho đẹp
                     Text(
-                        "Đã chọn: ${AppColors.getColorName(_selectedColor)}, Size $_selectedSize",
+                        "Đã chọn: ${AppConfig.getColorName(_selectedColor)}, Size $_selectedSize",
                         style: const TextStyle(fontSize: 14, color: Colors.black87)
                     ),
                   ],
@@ -108,7 +108,7 @@ class _AddToCartSheetState extends State<AddToCartSheet> {
                             Container(
                               padding: const EdgeInsets.all(2),
                               decoration: BoxDecoration(
-                                border: isSelected ? Border.all(color: AppColors.primary, width: 2) : Border.all(color: Colors.grey[300]!),
+                                border: isSelected ? Border.all(color: AppConfig.primary, width: 2) : Border.all(color: Colors.grey[300]!),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Container(
@@ -136,16 +136,16 @@ class _AddToCartSheetState extends State<AddToCartSheet> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+                            color: isSelected ? AppConfig.primary.withOpacity(0.1) : Colors.white,
                             border: Border.all(
-                                color: isSelected ? AppColors.primary : Colors.grey[300]!
+                                color: isSelected ? AppConfig.primary : Colors.grey[300]!
                             ),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             s,
                             style: TextStyle(
-                              color: isSelected ? AppColors.primary : Colors.black,
+                              color: isSelected ? AppConfig.primary : Colors.black,
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                             ),
                           ),

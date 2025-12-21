@@ -7,11 +7,11 @@ class GeneralButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   const GeneralButton({
-    Key? key,
+    super.key,
     required this.description,
     required this.color,
     required this.onPressed,
-  }) : super(key:key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sneakerx/src/models/product_detail.dart';
+import 'package:sneakerx/src/models/product.dart';
 import 'package:sneakerx/src/models/product_variant.dart';
 import 'package:sneakerx/src/services/product_service.dart';
-import '../../../config/app_colors.dart';
+import '../../../config/app_config.dart';
 import '../widgets/product_header.dart';
 import '../widgets/product_info.dart';
 import '../widgets/product_selector.dart';
@@ -19,7 +19,7 @@ class ProductDetailView extends StatefulWidget {
 
 class _ProductDetailViewState extends State<ProductDetailView> {
   final ProductService _productService = ProductService();
-  late Future<ProductDetail?> _productFuture;
+  late Future<Product?> _productFuture;
 
   // State to track selected variant (for price calculation)
   ProductVariant? _selectedVariant;
@@ -33,7 +33,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppConfig.background,
       extendBodyBehindAppBar: true, // Cho phép ảnh tràn lên dưới thanh status bar
       appBar: AppBar(
         backgroundColor: Colors.transparent, // Trong suốt
@@ -64,7 +64,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
         ],
       ),
 
-      body: FutureBuilder<ProductDetail?>(
+      body: FutureBuilder<Product?>(
         future: _productFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

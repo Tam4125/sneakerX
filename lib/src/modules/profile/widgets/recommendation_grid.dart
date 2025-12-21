@@ -1,6 +1,6 @@
 // import 'package:flutter/material.dart';
 // import '../../../data/datasources/mock_product_data.dart';
-// // import '../../../config/app_colors.dart';
+// // import '../../../config/app_config.dart';
 //
 // class RecommendationGrid extends StatelessWidget {
 //   const RecommendationGrid({Key? key}) : super(key: key);

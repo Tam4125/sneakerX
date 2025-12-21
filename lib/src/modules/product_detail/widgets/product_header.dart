@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../models/product_image.dart';
-import '../../../config/app_colors.dart';
-import 'product_video_player.dart'; // <--- NHỚ IMPORT FILE VỪA TẠO
+// <--- NHỚ IMPORT FILE VỪA TẠO
 
 class ProductHeader extends StatefulWidget {
   final List<ProductImage> images;
 
-  const ProductHeader({Key? key, required this.images}) : super(key: key);
+  const ProductHeader({super.key, required this.images});
 
   @override
   State<ProductHeader> createState() => _ProductHeaderState();

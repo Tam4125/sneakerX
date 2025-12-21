@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sneakerx/src/models/product_detail.dart';
+import 'package:sneakerx/src/models/product.dart';
 import 'package:sneakerx/src/services/product_service.dart';
 import '../widgets/custom_search_bar.dart';
 import '../widgets/banner_card.dart';
@@ -10,7 +10,7 @@ import '../models/banner.dart';
 import '../widgets/video_player_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -20,8 +20,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final ProductService _productService = ProductService();
 
   late List<BannerModel> _banners;
-  late Future<List<ProductDetail>?> _popularProductfuture;
-  late Future<List<ProductDetail>?> _favouriteProductfuture;
+  late Future<List<Product>?> _popularProductfuture;
+  late Future<List<Product>?> _favouriteProductfuture;
 
   @override
   void initState() {
@@ -271,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPopularProductGrid() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: FutureBuilder<List<ProductDetail>?>(
+      child: FutureBuilder<List<Product>?>(
         future: _popularProductfuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -331,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildFavouriteProductGrid() {
     return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: FutureBuilder<List<ProductDetail>?>(
+        child: FutureBuilder<List<Product>?>(
           future: _favouriteProductfuture,
           builder: (context,snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -342,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return const Center(child: Text("Product not found"));
             }
 
-            final List<ProductDetail> favouriteProducts = snapshot.data!;
+            final List<Product> favouriteProducts = snapshot.data!;
 
             return Column(
               children: [

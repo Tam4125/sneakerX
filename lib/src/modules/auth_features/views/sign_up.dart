@@ -13,7 +13,7 @@ import 'package:sneakerx/src/modules/auth_features/views/text_field.dart';
 // This part is immutable (variables cannot change).
 // It effectively just holds the data passed in from the parent.
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({Key? key}) : super(key:key);
+  const SignUpScreen({super.key});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_response.dart';
+import 'package:sneakerx/src/screens/seller_main_screen.dart';
 
 class ProfileHeader extends StatelessWidget {
   final UserSignInResponse user;
@@ -31,7 +32,14 @@ class ProfileHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => SellerMainScreen()
+                    )
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black87,
@@ -68,7 +76,7 @@ class ProfileHeader extends StatelessWidget {
                       border: Border.all(color: Colors.white, width: 3),
                       image: const DecorationImage(
                         // --- SỬA TẠI ĐÂY: Dùng AssetImage cho file nội bộ ---
-                          image: AssetImage("assets/images/ngoc.jpg"),
+                          image: NetworkImage("assets/images/ngoc.jpg"),
                           fit: BoxFit.cover
                       ),
                     ),

@@ -7,7 +7,7 @@ import '../../checkout/view/checkout_view.dart';
 class CartView extends StatefulWidget {
   final List<CartItemModel> cartItems;
 
-  const CartView({Key? key, required this.cartItems}) : super(key: key);
+  const CartView({super.key, required this.cartItems});
 
   @override
   State<CartView> createState() => _CartViewState();

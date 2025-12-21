@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:sneakerx/src/modules/homepage/screens/home_screen.dart';
 import 'package:sneakerx/src/modules/profile/view/profile_view.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}): super(key:key);
+  const MainScreen({super.key});
 
   @override
   State<MainScreen> createState() => _mainScreenState();

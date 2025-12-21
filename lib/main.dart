@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sneakerx/src/modules/auth_features/views/introduction_screen.dart';
-import 'package:sneakerx/src/modules/auth_features/views/sign_in.dart';
-import 'package:sneakerx/src/modules/auth_features/views/sign_up.dart';
-import 'package:sneakerx/src/modules/homepage/screens/home_screen.dart';
+import 'package:sneakerx/src/modules/seller/product/screens/my_product_list.dart';
+import 'package:sneakerx/src/modules/seller/product/screens/product_addition.dart';
 import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 import 'src/modules/product_detail/view/product_detail_view.dart';

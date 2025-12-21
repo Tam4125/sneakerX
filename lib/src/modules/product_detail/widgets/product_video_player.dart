@@ -6,10 +6,10 @@ class ProductVideoPlayer extends StatefulWidget {
   final bool isLocalAsset; // True nếu là file trong máy, False nếu là link mạng
 
   const ProductVideoPlayer({
-    Key? key,
+    super.key,
     required this.videoUrl,
     this.isLocalAsset = false,
-  }) : super(key: key);
+  });
 
   @override
   State<ProductVideoPlayer> createState() => _ProductVideoPlayerState();
