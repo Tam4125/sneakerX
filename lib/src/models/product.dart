@@ -11,10 +11,13 @@ class Product {
   final String description;
   final double rating;
   final int soldCount;
+  final double price;
   final DateTime createdAt;
   final List<ProductImage> images;
   final List<ProductVariant> variants;
   final List<ProductReview> reviews;
+  final String category;
+
 
   Product({
     required this.productId,
@@ -28,6 +31,8 @@ class Product {
     required this.variants,
     required this.reviews,
     required this.createdAt,
+    required this.price,
+    required this.category,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -39,6 +44,7 @@ class Product {
       description: json['description'] ?? '',
       rating: (json['rating'] ?? 0).toDouble(),
       soldCount: json['soldCount'] ?? 0,
+      price: (json['price'] ?? 0).toDouble(),
       images: (json['images'] as List?)
           ?.map((i) => ProductImage.fromJson(i))
           .toList() ?? [],
@@ -49,6 +55,7 @@ class Product {
           ?.map((v) => ProductReview.fromJson(v))
           .toList() ?? [],
       createdAt: DateTime.parse(json['createdAt']),
+      category: json['category'] ?? '',
     );
 
   }
@@ -63,7 +70,9 @@ class Product {
       'rating': rating,
       'status': "ACTIVE",
       'soldCount': soldCount,
+      'price': price,
       'createdAt': createdAt.toIso8601String(),
+      'category': category,
     };
   }
 
