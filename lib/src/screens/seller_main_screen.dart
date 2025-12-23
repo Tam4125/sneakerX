@@ -14,9 +14,11 @@ class _MainSellerScreenState extends State<SellerMainScreen> {
 
   // 1. Define the list of screens for each tab
   final List<Widget> _pages = [
-    const Center(child: Text("Seller UI")),
+    const Center(child: Text("Dashboard")),
     const ShopProductList(), // Index 1: Placeholder
+    const Center(child: Text("Orders")),
     const Center(child: Text("Finance")), // Index 2: Placeholder
+    const Center(child: Text("Profile")),
   ];
 
   void _onItemTapped(int index) {
@@ -47,16 +49,24 @@ class _MainSellerScreenState extends State<SellerMainScreen> {
           elevation: 0,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
+              icon: Icon(Icons.dashboard),
+              label: 'Dashboard',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.search),
-              label: 'Search',
+              icon: Icon(Icons.storage),
+              label: 'Products',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.notification_add_outlined),
-              label: 'Notification',
+              icon: Icon(Icons.note_alt),
+              label: 'Orders',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.monetization_on),
+              label: 'Finance',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.store),
+              label: 'Profile',
             ),
           ]
       ),

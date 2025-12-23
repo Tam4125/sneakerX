@@ -63,7 +63,6 @@ class ProductService {
         final List list = jsonMap['data']['content'];
 
         return list.map((data) => Product.fromJson(data)).toList();
-
       }
     } catch (e) {
       throw Exception("Error fetching favourite products: $e");

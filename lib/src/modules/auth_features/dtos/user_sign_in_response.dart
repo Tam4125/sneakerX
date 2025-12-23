@@ -4,6 +4,7 @@ class UserSignInResponse {
   final String email;
   final String role;
   final int? shopId;
+  final String avatarUrl;
   String accessToken; // The JWT
   String refreshToken;
 
@@ -12,6 +13,7 @@ class UserSignInResponse {
     required this.username,
     required this.email,
     required this.role,
+    required this.avatarUrl,
     required this.accessToken,
     required this.refreshToken,
     this.shopId
@@ -25,6 +27,7 @@ class UserSignInResponse {
       email: json['email'] ?? '',
       role: json['role'] ?? 'BUYER',
       shopId: json['shopId'],
+      avatarUrl: json['avatarUrl'] ?? 'https://res.cloudinary.com/dfningbdz/image/upload/v1766332049/Profile_avatar_placeholder_large_ta2cje.png',
       accessToken: json['accessToken'] ?? '',
       refreshToken: json['refreshToken'] ?? '',
     );

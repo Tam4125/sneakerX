@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:sneakerx/src/models/cart.dart';
 import 'package:sneakerx/src/models/product.dart';
+import 'package:sneakerx/src/modules/cart/dtos/save_to_cart_request.dart';
+import 'package:sneakerx/src/modules/cart/view/cart_view.dart';
+import 'package:sneakerx/src/screens/main_screen.dart';
+import 'package:sneakerx/src/services/cart_service.dart';
 import '../../../config/app_config.dart';
 
 class AddToCartSheet extends StatefulWidget {
@@ -17,9 +22,13 @@ class AddToCartSheet extends StatefulWidget {
 }
 
 class _AddToCartSheetState extends State<AddToCartSheet> {
+  final CartService _cartService = CartService();
+
   int _quantity = 1;
   String _selectedSize = "";
   String _selectedColor = "";
+
+  bool _isLoading = false;
 
   late Set<String> _sizes;
   late Set<String> _colors;
@@ -32,6 +41,26 @@ class _AddToCartSheetState extends State<AddToCartSheet> {
 
     if (_sizes.isNotEmpty) _selectedSize = _sizes.first;
     if (_colors.isNotEmpty) _selectedColor = _colors.first;
+  }
+
+  Future<bool> _handleBtn() async {
+    try {
+      int sizeId = widget.product.variants.where((map) => map.variantValue.toString() == _selectedSize && map.variantType == "SIZE").first.variantId;
+      int colorId = widget.product.variants.where((map) => map.variantValue.toString() == _selectedColor && map.variantType == "COLOR").first.variantId;
+
+      SaveToCartRequest request = SaveToCartRequest(
+        sizeId: sizeId,
+        colorId: colorId,
+        quantity: _quantity,
+        productId: widget.product.productId
+      );
+
+      await _cartService.saveToCart(request);
+      return true;
+    } catch (e) {
+      _showMessage("Error save to cart: $e");
+      return false;
+    }
   }
 
   @override
@@ -66,7 +95,7 @@ class _AddToCartSheetState extends State<AddToCartSheet> {
                   children: [
                     const SizedBox(height: 10),
                     Text(
-                      widget.product.formatCurrency(widget.product.variants.first.price),
+                      Product.formatCurrency(widget.product.variants.first.price),
                       style: const TextStyle(color: Colors.red, fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
@@ -182,53 +211,54 @@ class _AddToCartSheetState extends State<AddToCartSheet> {
             ),
           ),
 
-          // SizedBox(
-          //   width: double.infinity,
-          //   child: ElevatedButton(
-          //     style: ElevatedButton.styleFrom(
-          //       backgroundColor: widget.isBuyNow ? AppColors.primary : AppColors.secondary,
-          //       padding: const EdgeInsets.symmetric(vertical: 16),
-          //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          //     ),
-          //
-          //     // --- 3. LOGIC CHUYỂN TRANG Ở ĐÂY ---
-          //     onPressed: () {
-          //       Navigator.pop(context); // Đóng popup trước
-          //
-          //       if (widget.isBuyNow) {
-          //         // === TRƯỜNG HỢP MUA NGAY: CHUYỂN SANG GIỎ HÀNG ===
-          //
-          //         // Tạo dữ liệu sản phẩm để gửi đi
-          //         final itemToAdd = CartItemModel(
-          //           name: widget.product.name,
-          //           price: widget.product.price,
-          //           imageUrl: widget.images.isNotEmpty ? widget.images.first.imageUrl : "",
-          //           size: _selectedSize,
-          //           colorName: _getColorName(_selectedColor), // Dùng hàm đổi tên màu
-          //           quantity: _quantity,
-          //         );
-          //
-          //         // Chuyển trang
-          //         Navigator.push(
-          //           context,
-          //           MaterialPageRoute(
-          //             builder: (context) => CartView(cartItems: [itemToAdd]),
-          //           ),
-          //         );
-          //       } else {
-          //         // === TRƯỜNG HỢP THÊM VÀO GIỎ: HIỆN THÔNG BÁO ===
-          //         ScaffoldMessenger.of(context).showSnackBar(
-          //             SnackBar(content: Text("Đã thêm: ${_getColorName(_selectedColor)} - Size $_selectedSize (x$_quantity)"))
-          //         );
-          //       }
-          //     },
-          //
-          //     child: Text(
-          //       widget.isBuyNow ? "Mua ngay" : "Thêm vào giỏ hàng",
-          //       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-          //     ),
-          //   ),
-          // )
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: widget.isBuyNow ? AppConfig.primary : AppConfig.secondary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+
+              onPressed: () async {
+                setState(() {
+                  _isLoading = true;
+                });
+
+                final result = await _handleBtn();
+
+                setState(() {
+                  _isLoading = false;
+                });
+
+                Navigator.pop(context); // Đóng popup trước
+
+                if (result) {
+                  if (widget.isBuyNow) {
+                    // === TRƯỜNG HỢP MUA NGAY: CHUYỂN SANG GIỎ HÀNG ===
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MainScreen(initialIndex: 3,),
+                      ),
+                    );
+                  } else {
+                    // === TRƯỜNG HỢP THÊM VÀO GIỎ: HIỆN THÔNG BÁO ===
+                    _showMessage(
+                        "Đã thêm: $_selectedColor - Size $_selectedSize (x$_quantity)");
+                  }
+                } else {
+                  _showMessage("Error save to cart");
+                }
+              },
+              child: _isLoading
+                ? CircularProgressIndicator(color: AppConfig.primary,)
+                : Text(
+                    widget.isBuyNow ? "Mua ngay" : "Thêm vào giỏ hàng",
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+            ),
+          )
         ],
       ),
     );
@@ -245,6 +275,16 @@ class _AddToCartSheetState extends State<AddToCartSheet> {
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(text),
+      ),
+    );
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.grey[800],
       ),
     );
   }

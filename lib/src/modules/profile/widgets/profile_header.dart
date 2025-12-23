@@ -7,7 +7,7 @@ class ProfileHeader extends StatelessWidget {
   const ProfileHeader({
     super.key,
     required this.user
-});
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -74,9 +74,9 @@ class ProfileHeader extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
-                      image: const DecorationImage(
+                      image: DecorationImage(
                         // --- SỬA TẠI ĐÂY: Dùng AssetImage cho file nội bộ ---
-                          image: NetworkImage("assets/images/ngoc.jpg"),
+                          image: NetworkImage(user.avatarUrl),
                           fit: BoxFit.cover
                       ),
                     ),

@@ -50,6 +50,8 @@ class AuthProvider extends ChangeNotifier {
         _currentUser = signInResponse.data;
 
         // Save Token to Storage (Preferences)
+        _token = _currentUser!.accessToken;
+        print("Save access token: ${_currentUser!.accessToken}\nSave refresh token: ${_currentUser!.refreshToken}");
         await TokenManager.saveTokens(_currentUser!.accessToken, _currentUser!.refreshToken);
 
 
@@ -57,8 +59,8 @@ class AuthProvider extends ChangeNotifier {
         try {
           final shopResponse = await _shopService.getCurrentUserShop();
 
-          if (shopResponse.success && shopResponse.data != null) {
-            _shopId = shopResponse.data!.shopId;
+          if (shopResponse != null) {
+            _shopId = shopResponse.shopId;
             print("User is a Seller. Shop ID: $_shopId");
             await UserInfoManager.saveShopId(_shopId!);
           } else {
@@ -107,7 +109,7 @@ class AuthProvider extends ChangeNotifier {
       // 2. Verify with Server (Get fresh profile)
       // This ensures the token is actually valid and user isn't banned
       final response = await _userService.getCurrentUser();
-      final shopResponse = await _shopService.getCurrentUserShop();
+
 
       if(response.success && response.data != null) {
         _currentUser = response.data;
@@ -118,16 +120,28 @@ class AuthProvider extends ChangeNotifier {
         _currentUser!.refreshToken = refreshToken;
         _currentUser!.accessToken = accessToken;
         _token = accessToken;
+        print("Save access token: $accessToken\nSave refresh token: ${refreshToken}");
         await TokenManager.saveTokens(accessToken, refreshToken);
 
-        if(shopResponse.success && shopResponse.data != null) {
-          _shopId = shopResponse.data!.shopId;
-          print("User is a Seller. Shop ID: $_shopId");
-          await UserInfoManager.saveShopId(_shopId!);
-        } else {
-          print("User has no shop.");
-          await UserInfoManager.clearInfo();
+        try {
+          final shopResponse = await _shopService.getCurrentUserShop();
+
+          if(shopResponse != null) {
+            _shopId = shopResponse.shopId;
+            print("User is a Seller. Shop ID: $_shopId");
+            await UserInfoManager.saveShopId(_shopId!);
+          } else {
+            print("User has no shop.");
+            await UserInfoManager.clearInfo();
+          }
+
+        } catch(e) {
+          print("Failed to fetch shop details: $e");
+          // Don't fail the whole login just because shop fetch failed,
+          // just leave shopId null.
+          _shopId = null;
         }
+
       } else {
         await logout();
       }

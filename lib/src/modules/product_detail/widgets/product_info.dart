@@ -32,7 +32,7 @@ class ProductInfo extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                product.formatCurrency(price),
+                Product.formatCurrency(price),
                 style: const TextStyle(
                   color: Color(0xFF4CAF50),
                   fontSize: 24,
@@ -43,7 +43,7 @@ class ProductInfo extends StatelessWidget {
 
               // Giá gốc gạch ngang
               Text(
-                  product.formatCurrency(price*2),
+                  Product.formatCurrency(price*2),
                   style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 12,

@@ -1,40 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:sneakerx/src/models/cart.dart';
+import 'package:sneakerx/src/models/product.dart';
 import 'package:sneakerx/src/modules/cart/models/cart_model.dart';
-
+import 'package:sneakerx/src/services/cart_service.dart';
 import '../../checkout/view/checkout_view.dart';
 
-
 class CartView extends StatefulWidget {
-  final List<CartItemModel> cartItems;
-
-  const CartView({super.key, required this.cartItems});
+  const CartView({super.key});
 
   @override
   State<CartView> createState() => _CartViewState();
 }
 
 class _CartViewState extends State<CartView> {
-  // Biến local để xử lý hiển thị và xóa
-  late List<CartItemModel> _items;
+  final CartService _cartService = CartService();
+
+  // State variables
+  List<CartItemModel> _items = [];
+  bool _isLoading = true; // Use this to show loading instead of FutureBuilder
   double shippingFee = 30000;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    // 2. Nạp dữ liệu từ bên ngoài vào biến local để thao tác
-    _items = widget.cartItems;
+    _loadCartData();
   }
 
-  // Tính tổng tiền dựa trên danh sách _items hiện tại
-  double get subTotal {
+  // Fetch data ONCE when screen loads
+  Future<void> _loadCartData() async {
+    try {
+      final cart = await _cartService.getCurrentUserCart();
+      if (cart != null && cart.cartItems.isNotEmpty) {
+        setState(() {
+          _items = cart.cartItems
+              .map((cartItem) => CartItemModel.fromCartItem(cartItem))
+              .toList();
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _items = [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<bool> _deleteCartItem(int itemId) async {
+    try {
+      await _cartService.deleteCartItem(itemId);
+      return true;
+    } catch (e) {
+      _showMessage("Error delete cart item: $e");
+      return false;
+    }
+  }
+
+  // Calculate totals based on LOCAL state (_items)
+  double get _subTotal {
     return _items.fold(0, (sum, item) => sum + (item.price * item.quantity));
   }
 
-  double get finalTotal => subTotal + shippingFee;
-
-  String formatCurrency(double amount) {
-    return "${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}đ";
-  }
+  double get _finalTotal => _subTotal + shippingFee;
 
   @override
   Widget build(BuildContext context) {
@@ -53,10 +86,14 @@ class _CartViewState extends State<CartView> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
       ),
-      body: Column(
+      // Use _isLoading flag instead of FutureBuilder
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+          ? Center(child: Text("Error: $_errorMessage"))
+          : Column(
         children: [
           Expanded(
-            // Dùng _items thay vì widget.cartItems
             child: _items.isEmpty
                 ? const Center(child: Text("Giỏ hàng đang trống"))
                 : ListView.builder(
@@ -67,7 +104,6 @@ class _CartViewState extends State<CartView> {
               },
             ),
           ),
-          // Chỉ hiện khung thanh toán nếu có hàng
           if (_items.isNotEmpty) _buildBottomCheckout(),
         ],
       ),
@@ -85,7 +121,7 @@ class _CartViewState extends State<CartView> {
       ),
       child: Row(
         children: [
-          // Ảnh sản phẩm
+          // Product Image
           Container(
             width: 80,
             height: 80,
@@ -93,14 +129,15 @@ class _CartViewState extends State<CartView> {
               color: Colors.grey[200],
               borderRadius: BorderRadius.circular(8),
               image: DecorationImage(
-                // Xử lý ảnh phòng trường hợp url rỗng
-                image: NetworkImage(item.imageUrl.isNotEmpty ? item.imageUrl : "https://via.placeholder.com/80"),
+                image: NetworkImage(item.imageUrl.isNotEmpty
+                    ? item.imageUrl
+                    : "https://via.placeholder.com/80"),
                 fit: BoxFit.cover,
               ),
             ),
           ),
           const SizedBox(width: 12),
-          // Thông tin
+          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,19 +148,21 @@ class _CartViewState extends State<CartView> {
                     Expanded(
                       child: Text(
                         item.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     InkWell(
-                      onTap: () {
-                        // Xóa item khỏi danh sách _items
+                      onTap: () async {
                         setState(() {
                           _items.removeAt(index);
                         });
+                        await _deleteCartItem(item.itemId);
                       },
-                      child: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                      child: const Icon(Icons.delete_outline,
+                          color: Colors.red, size: 20),
                     )
                   ],
                 ),
@@ -133,18 +172,31 @@ class _CartViewState extends State<CartView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(formatCurrency(item.price),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(Product.formatCurrency(item.price),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
                     Row(
                       children: [
                         _btnQty(Icons.remove, () {
-                          if (item.quantity > 1) setState(() => item.quantity--);
+                          if (item.quantity > 1) {
+                            setState(() {
+                              item.quantity--;
+                              // Note: Call API update quantity here if needed
+                            });
+                          }
                         }),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
-                          child: Text("${item.quantity}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text("${item.quantity}",
+                              style:
+                              const TextStyle(fontWeight: FontWeight.bold)),
                         ),
-                        _btnQty(Icons.add, () => setState(() => item.quantity++)),
+                        _btnQty(Icons.add, () {
+                          setState(() {
+                            item.quantity++;
+                            // Note: Call API update quantity here if needed
+                          });
+                        }),
                       ],
                     )
                   ],
@@ -177,16 +229,20 @@ class _CartViewState extends State<CartView> {
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))],
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _rowSummary("Tạm tính", formatCurrency(subTotal)),
+          _rowSummary("Tạm tính", Product.formatCurrency(_subTotal)),
           const SizedBox(height: 10),
-          _rowSummary("Phí vận chuyển", formatCurrency(shippingFee)),
+          _rowSummary("Phí vận chuyển", Product.formatCurrency(shippingFee)),
           const Divider(height: 30),
-          _rowSummary("Tổng thanh toán", formatCurrency(finalTotal), isBold: true),
+          _rowSummary("Tổng thanh toán", Product.formatCurrency(_finalTotal),
+              isBold: true),
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
@@ -194,15 +250,14 @@ class _CartViewState extends State<CartView> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.greenAccent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              // --- 3. LOGIC CHUYỂN TRANG THANH TOÁN ---
               onPressed: () {
                 if (_items.isNotEmpty) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      // Truyền danh sách _items sang CheckoutView
                       builder: (context) => CheckoutView(checkoutItems: _items),
                     ),
                   );
@@ -212,7 +267,11 @@ class _CartViewState extends State<CartView> {
                   );
                 }
               },
-              child: const Text("Thanh toán ngay", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text("Thanh toán ngay",
+                  style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold)),
             ),
           )
         ],
@@ -224,9 +283,25 @@ class _CartViewState extends State<CartView> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: TextStyle(fontSize: isBold ? 16 : 14, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-        Text(value, style: TextStyle(fontSize: isBold ? 18 : 14, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+        Text(title,
+            style: TextStyle(
+                fontSize: isBold ? 16 : 14,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+        Text(value,
+            style: TextStyle(
+                fontSize: isBold ? 18 : 14,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
       ],
+    );
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.grey[800],
+      ),
     );
   }
 }

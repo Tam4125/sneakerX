@@ -115,10 +115,10 @@ class _AddProductScreen extends State<AddProductScreen> {
       }
     }
 
-    // if (_mediaItems.isEmpty) {
-    //   _showMessage('Vui lòng thêm ít nhất 1 hình ảnh');
-    //   return;
-    // }
+    if (_mediaItems.isEmpty) {
+      _showMessage('Vui lòng thêm ít nhất 1 hình ảnh');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -151,6 +151,7 @@ class _AddProductScreen extends State<AddProductScreen> {
         variants: variantDtos, // Send as a list
         images: imageFiles,
       );
+
       Product? newProduct = await _shopService.createProduct(request);
 
       if (mounted) {
@@ -177,7 +178,7 @@ class _AddProductScreen extends State<AddProductScreen> {
         leading: const BackButton(color: Colors.black),
         actions: [
           if (_isLoading)
-            const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
+            const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: Colors.black,)))
           else
             IconButton(icon: const Icon(Icons.check, color: Colors.blue), onPressed: _saveProduct),
         ],
@@ -508,6 +509,7 @@ class _AddProductScreen extends State<AddProductScreen> {
         DropdownMenuItem(value: 1, child: Text("Nike")),
         DropdownMenuItem(value: 2, child: Text("Adidas")),
         DropdownMenuItem(value: 3, child: Text("Puma")),
+        DropdownMenuItem(value: 4, child: Text("Other")),
       ],
       onChanged: (v) => setState(() => _selectedCategoryId = v),
       validator: (v) => v == null ? "Chọn danh mục" : null,

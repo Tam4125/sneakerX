@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sneakerx/src/modules/cart/view/cart_view.dart';
 import 'package:sneakerx/src/modules/seller/product/screens/my_product_list.dart';
 import 'package:sneakerx/src/modules/seller/product/screens/product_addition.dart';
 import 'package:sneakerx/src/screens/main_screen.dart';

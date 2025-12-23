@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sneakerx/src/models/product.dart';
 import 'package:sneakerx/src/models/product_variant.dart';
+import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/services/product_service.dart';
 import '../../../config/app_config.dart';
 import '../widgets/product_header.dart';
@@ -58,7 +59,14 @@ class _ProductDetailViewState extends State<ProductDetailView> {
             ),
             child: IconButton(
               icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MainScreen(initialIndex: 3,)
+                  )
+                );
+              },
             ),
           ),
         ],
@@ -109,9 +117,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                   content: "⭐️ ${product.rating}/5.0 (${product.reviews.length} đánh giá)",
                 ),
 
-                // Danh sách sản phẩm khác
-                // RelatedProducts(products: relatedProducts),
-
                 // Khoảng trống dưới cùng
                 const SizedBox(height: 20),
                 BottomActionBar(product: product),
@@ -123,35 +128,4 @@ class _ProductDetailViewState extends State<ProductDetailView> {
       )
     );
   }
-
-  // // --- HÀM XỬ LÝ CHUYỂN TRANG GIỎ HÀNG ---
-  // void _navigateToCart(BuildContext context) {
-  //   // Tạo dữ liệu giả lập giỏ hàng dựa trên sản phẩm hiện tại
-  //   final List<CartItemModel> fakeCartData = [
-  //     CartItemModel(
-  //       name: product.name,
-  //       price: product.price,
-  //       imageUrl: images.isNotEmpty ? images[0].imageUrl : "", // Lấy ảnh đầu tiên
-  //       size: "42",
-  //       colorName: "Cam/Đen",
-  //       quantity: 1,
-  //     ),
-  //     // Thêm thử 1 sản phẩm gợi ý vào giỏ
-  //     if (relatedProducts.isNotEmpty)
-  //       CartItemModel(
-  //         name: relatedProducts[0].name,
-  //         price: relatedProducts[0].price,
-  //         imageUrl: relatedProducts[0].imageUrl,
-  //         size: "40",
-  //         colorName: "Mặc định",
-  //         quantity: 2,
-  //       ),
-  //   ];
-  //
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => CartView(cartItems: fakeCartData),
-  //     ),
-  //   );
 }

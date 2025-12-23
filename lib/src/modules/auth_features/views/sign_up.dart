@@ -64,7 +64,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       username: _usernameController.text.trim(),
       email: _emailController.text.trim(),
       phone: _phoneController.text.trim(),
-      password: _passwordController.text
+      password: _passwordController.text,
+      avatarUrl: "https://res.cloudinary.com/dfningbdz/image/upload/v1766332049/Profile_avatar_placeholder_large_ta2cje.png"
     );
 
     // 3. Call Backend

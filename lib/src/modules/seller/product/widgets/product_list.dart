@@ -5,10 +5,12 @@ import 'package:sneakerx/src/modules/seller/product/screens/product_edit.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
+  final VoidCallback onRefresh;
 
   const ProductCard({
     super.key,
     required this.product,
+    required this.onRefresh
   });
 
 
@@ -18,7 +20,7 @@ class ProductCard extends StatelessWidget {
     final hasVariants = product.variants.isNotEmpty;
     final firstVariant = hasVariants ? product.variants.first : null;
 
-    final price = hasVariants ? product.formatCurrency(firstVariant!.price) : 'Liên hệ';
+    final price = hasVariants ? Product.formatCurrency(firstVariant!.price) : 'Liên hệ';
     final stock = hasVariants ? firstVariant!.stock.toString() : '0';
 
     return Container(
@@ -63,14 +65,20 @@ class ProductCard extends StatelessWidget {
 
           IconButton(
             icon: const Icon(Icons.edit, color: Color(0xff86f4b5)),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditProductScreen(product: product)
-                )
-              );
-            },
+              onPressed: () async {
+                // Wait for Edit Screen to close
+                final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            EditProductScreen(product: product)
+                    )
+                );
+                // 4. If result is true (saved), refresh the parent list
+                if (result == true) {
+                  onRefresh();
+                }
+              }
           ),
 
         ],

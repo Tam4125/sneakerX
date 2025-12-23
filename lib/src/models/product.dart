@@ -68,7 +68,7 @@ class Product {
   }
 
   // Helper to format currency
-  String formatCurrency(double amount) {
+  static String formatCurrency(double amount) {
     return NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(amount);
   }
 }

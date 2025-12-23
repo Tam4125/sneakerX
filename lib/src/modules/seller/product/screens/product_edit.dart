@@ -7,26 +7,43 @@ import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/models/product.dart';
 import 'package:sneakerx/src/modules/seller/models/create_product_model.dart';
 import 'package:sneakerx/src/modules/seller/models/create_variant_model.dart';
+import 'package:sneakerx/src/modules/seller/models/update_product_request.dart';
+import 'package:sneakerx/src/modules/seller/models/update_variant_request.dart';
 import 'package:sneakerx/src/services/shop_service.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 
 
-// --- HELPER CLASS TO MANAGE UI STATE FOR EACH VARIANT ---
+// --- HELPER CLASS ---
 class VariantFormItem {
+  int? id;  // Null for new variants, ID for existing
   String type; // "SIZE" or "COLOR"
   String? selectedValue; // "42" or "0xFFFF0000"
   TextEditingController priceCtrl = TextEditingController();
   TextEditingController stockCtrl = TextEditingController();
 
   VariantFormItem({
+    this.id,
     this.type = "SIZE",
     this.selectedValue,
-  });
+    String price = "",
+    String stock = "",
+  }) {
+    priceCtrl.text = price;
+    stockCtrl.text = stock;
+  }
 }
+
+class MediaItem {
+  final File? file;
+  final String type;
+  final String? remoteUrl;
+  MediaItem({this.file, this.remoteUrl, required this.type});
+}
+
 
 class EditProductScreen extends StatefulWidget {
   final Product product;
-  const EditProductScreen({Key? key, required this.product}) : super(key: key);
+  const EditProductScreen({super.key, required this.product});
 
   @override
   State<EditProductScreen> createState() => _EditProductScreenState();
@@ -35,31 +52,67 @@ class EditProductScreen extends StatefulWidget {
 class _EditProductScreenState extends State<EditProductScreen> {
   final ShopService _shopService = ShopService();
   final AppConfig _appConfig = AppConfig();
+  final ImagePicker _picker = ImagePicker();
   final _formKey = GlobalKey<FormState>();
 
-  // Basic Product Controllers
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  // Controllers
+  late TextEditingController _nameController;
+  late TextEditingController _descriptionController;
 
   // State
   int? _selectedCategoryId;
   String _selectedStatus = 'ACTIVE';
-  List<MediaItem> _mediaItems = [];
-  final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
 
-  // --- DYNAMIC VARIANTS STATE ---
-  // Start with 1 empty variant
-  List<VariantFormItem> _variantItems = [VariantFormItem()];
+  // List
+  List<MediaItem> _mediaItems = [];
+  List<VariantFormItem> _variantItems = [];
 
   @override
   void initState() {
     super.initState();
+    _initializeData();
+  }
+
+  void _initializeData() {
+    final product = widget.product;
+
+    // 1. Basic Info
+    _nameController = TextEditingController(text: product.name);
+    _descriptionController = TextEditingController(text: product.description);
+    _selectedCategoryId = product.categoryId;
+    _selectedStatus = "ACTIVE";
+
+    // 2. Initialize Images (Map from ProductImage -> MediaItem)
+    if(product.images.isNotEmpty) {
+      _mediaItems = product.images.map(
+          (img) => MediaItem(
+            type: 'image',
+            remoteUrl: img.imageUrl,
+          )
+      ).toList();
+    }
+
+
+    if (product.variants.isEmpty) {
+      _variantItems = [VariantFormItem()];
+    } else {
+      _variantItems = product.variants.map(
+              (variant) => VariantFormItem(
+                id: variant.variantId,
+                type: variant.variantType,
+                selectedValue: variant.variantValue,
+                price: variant.price.toString(),
+                stock: variant.stock.toString()
+          )
+      ).toList();
+    }
 
   }
 
   @override
   void dispose() {
+    super.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
     // Dispose all dynamic controllers
@@ -67,38 +120,42 @@ class _EditProductScreenState extends State<EditProductScreen> {
       v.priceCtrl.dispose();
       v.stockCtrl.dispose();
     }
-    super.dispose();
   }
 
-  // --- MEDIA PICKER LOGIC  ---
-  Future<void> _pickMedia(String type) async {
+  // --- ACTIONS ---
+  Future<void> _pickMedia() async {
     try {
-      if (type == 'image') {
-        final XFile? image = await _picker.pickImage(
-          source: ImageSource.gallery,
-          imageQuality: 80,
-        );
-        if (image != null) {
-          setState(() {
-            _mediaItems.add(MediaItem(
-              file: File(image.path),
-              type: 'image',
-              path: image.path,
-            ));
-          });
-        }
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (image != null) {
+        setState(() {
+          _mediaItems.add(MediaItem(
+            file: File(image.path),
+            type: 'image',
+          ));
+        });
       }
     } catch (e) {
       _showMessage('Error picking media: $e');
     }
   }
 
-  // --- ACTIONS ---
-
   void _addVariant() {
     setState(() {
       _variantItems.add(VariantFormItem());
     });
+  }
+
+  void _removeImage(int index) {
+    if (_mediaItems.length > 1) {
+      setState(() {
+        _mediaItems.removeAt(index);
+      });
+    } else {
+      _showMessage("Phải có ít nhất 1 hình ảnh");
+    }
   }
 
   void _removeVariant(int index) {
@@ -111,7 +168,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
     }
   }
 
-  Future<void> _saveProduct() async {
+  Future<void> _updateProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
     // Validate Variants manually (ensure values are picked)
@@ -122,10 +179,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
       }
     }
 
-    // if (_mediaItems.isEmpty) {
-    //   _showMessage('Vui lòng thêm ít nhất 1 hình ảnh');
-    //   return;
-    // }
+    if (_mediaItems.isEmpty) {
+      _showMessage('Vui lòng thêm ít nhất 1 hình ảnh');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -134,9 +191,22 @@ class _EditProductScreenState extends State<EditProductScreen> {
       final token = auth.token;
       if (token == null) throw Exception("Chưa đăng nhập");
 
-      // 1. Convert UI Items to DTOs
-      List<CreateVariantRequest> variantDtos = _variantItems.map((item) {
-        return CreateVariantRequest(
+      // 1. Separate Images: Keep URLs vs New Files
+      List<String> keepImageUrls = [];
+      List<File> newImageFiles = [];
+
+      for (var item in _mediaItems) {
+        if (item.remoteUrl != null) {
+          keepImageUrls.add(item.remoteUrl!);
+        } else if (item.file != null) {
+          newImageFiles.add(item.file!);
+        }
+      }
+
+      // 2. Prepare Variant DTOs
+      List<VariantUpdateDto> variantDtos = _variantItems.map((item) {
+        return VariantUpdateDto(
+          variantId: item.id,
           variantType: item.type, // "SIZE" or "COLOR"
           variantValue: item.selectedValue!, // "42" or "0xFF..."
           price: double.parse(item.priceCtrl.text),
@@ -144,21 +214,20 @@ class _EditProductScreenState extends State<EditProductScreen> {
         );
       }).toList();
 
-      List<File> imageFiles = _mediaItems.map((m) => m.file).toList();
-
       if(!auth.hasShop) throw Exception("Chưa tạo shop");
       final int shopId = auth.shopId!;
       // 2. Call Service
-      final request = CreateProductRequest(
+      final request = UpdateProductRequest(
         shopId: shopId,
         name: _nameController.text,
         description: _descriptionController.text,
         status: _selectedStatus,
         categoryId: _selectedCategoryId!,
         variants: variantDtos, // Send as a list
-        images: imageFiles,
+        keepImageUrls: keepImageUrls,
+        newImages: newImageFiles
       );
-      Product? newProduct = await _shopService.createProduct(request);
+      final apiResponse = await _shopService.updateProduct(widget.product.productId, request);
 
       if (mounted) {
         _showMessage('Thêm sản phẩm thành công!');
@@ -186,7 +255,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
           if (_isLoading)
             const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
           else
-            IconButton(icon: const Icon(Icons.check, color: Colors.blue), onPressed: _saveProduct),
+            IconButton(icon: const Icon(Icons.check, color: Colors.blue), onPressed: _updateProduct),
         ],
       ),
       body: Form(
@@ -371,34 +440,36 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   Widget _buildMediaSection() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
-        Text('Thêm hình ảnh', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey[700])),
+        Text('Hình ảnh sản phẩm', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey[700])),
         const SizedBox(height: 16),
 
-        // Horizontal Scroll List
         SizedBox(
           height: 100,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: _mediaItems.length + 1, // +1 for the "Add" button
+            // Total items = Existing Media List + 1 Add Button
+            itemCount: _mediaItems.length + 1,
             itemBuilder: (ctx, index) {
+
+              // --- 1. RENDER "ADD BUTTON" (Last Item) ---
               if (index == _mediaItems.length) {
-                // Add Button
                 return GestureDetector(
-                  onTap: () => _pickMedia('image'),
+                  onTap: () => _pickMedia(), // Ensure this method is defined in your class
                   child: Container(
                     width: 100,
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
-                      color: Colors.grey[100],
+                      color: Colors.grey[50],
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(color: Colors.grey[300]!, style: BorderStyle.solid),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: const [
-                        Icon(Icons.add_a_photo, color: Colors.grey),
+                        Icon(Icons.add_a_photo_outlined, color: Colors.grey),
                         SizedBox(height: 4),
                         Text("Thêm", style: TextStyle(color: Colors.grey, fontSize: 12))
                       ],
@@ -407,29 +478,45 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 );
               }
 
-              // Image Item
+              // --- 2. RENDER IMAGE ITEM (Old or New) ---
               final item = _mediaItems[index];
+
               return Stack(
                 children: [
                   Container(
                     width: 100,
+                    height: 100,
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(color: Colors.grey[200]!),
                       borderRadius: BorderRadius.circular(8),
+                      color: Colors.white,
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: Image.file(item.file, fit: BoxFit.cover),
+                      child: _buildImageWidget(item), // <--- Logic separated here
                     ),
                   ),
+
+                  // Delete Button (X)
                   Positioned(
-                    top: 4, right: 12,
+                    top: 4,
+                    right: 12, // Adjusted slightly to fit container margin
                     child: GestureDetector(
-                      onTap: () => setState(() => _mediaItems.removeAt(index)),
-                      child: const CircleAvatar(
-                        radius: 10, backgroundColor: Colors.white,
-                        child: Icon(Icons.close, size: 14, color: Colors.red),
+                      onTap: () => setState(() {
+                        // Logic: Remove from the list.
+                        // If it was a 'remoteUrl', it won't be sent in 'keepImageUrls'
+                        // If it was a 'file', it won't be uploaded.
+                        _mediaItems.removeAt(index);
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 2)],
+                        ),
+                        child: const Icon(Icons.close, size: 14, color: Colors.red),
                       ),
                     ),
                   ),
@@ -440,6 +527,39 @@ class _EditProductScreenState extends State<EditProductScreen> {
         ),
       ],
     );
+  }
+
+// --- Helper to switch between Network and File Image ---
+  Widget _buildImageWidget(MediaItem item) {
+    if (item.remoteUrl != null && item.remoteUrl!.isNotEmpty) {
+      // OLD IMAGE (From Backend)
+      return Image.network(
+        item.remoteUrl!,
+        fit: BoxFit.cover,
+        loadingBuilder: (ctx, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
+        errorBuilder: (ctx, error, stackTrace) =>
+        const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+      );
+    } else if (item.file != null) {
+      // NEW IMAGE (From Gallery)
+      return Image.file(
+        item.file!,
+        fit: BoxFit.cover,
+      );
+    } else {
+      // Fallback
+      return const Center(child: Icon(Icons.image, color: Colors.grey));
+    }
   }
 
   Widget _buildSizeDropdown(VariantFormItem item) {
@@ -523,9 +643,4 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
 }
 
-class MediaItem {
-  final File file;
-  final String type;
-  final String path;
-  MediaItem({required this.file, required this.type, required this.path});
-}
+

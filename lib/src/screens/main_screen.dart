@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:sneakerx/src/modules/cart/view/cart_view.dart';
 import 'package:sneakerx/src/modules/homepage/screens/home_screen.dart';
 import 'package:sneakerx/src/modules/profile/view/profile_view.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final int initialIndex;
+  const MainScreen({super.key, this.initialIndex = 0});
 
   @override
   State<MainScreen> createState() => _mainScreenState();
@@ -11,14 +13,14 @@ class MainScreen extends StatefulWidget {
 
 class _mainScreenState extends State<MainScreen> {
 
-  int _selectedIndex = 0;
+  late int _selectedIndex;
 
   // 1. Define the list of screens for each tab
   final List<Widget> _pages = [
     const HomeScreen(),
     const Center(child: Text("Search Screen")), // Index 1: Placeholder
     const Center(child: Text("Notifications")), // Index 2: Placeholder
-    const Center(child: Text("Cart Screen")),   // Index 3: Placeholder
+    const CartView(),   // Index 3: Placeholder
     const ProfileView(),// Index 4: Placeholder
   ];
 
@@ -26,6 +28,12 @@ class _mainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
   }
 
   @override

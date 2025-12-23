@@ -24,17 +24,21 @@ class _ShopProductList extends State<ShopProductList> {
   @override
   void initState() {
     super.initState();
-
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    if (auth.hasShop) {
-      _shopsFuture = _shopService.getShopDetail(auth.shopId!);
-    } else {
-      // Handle case where user is trying to access seller screen but has no shop
-      // e.g., redirect to "Create Shop" screen
-      _shopsFuture = Future.error("No Shop Found");
-    }
-
+    _loadData(); // Call the helper method
   }
+
+  // Helper to load/reload data
+  void _loadData() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    setState(() {
+      if (auth.hasShop) {
+        _shopsFuture = _shopService.getCurrentUserShop();
+      } else {
+        _shopsFuture = Future.error("No Shop Found");
+      }
+    });
+  }
+
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -104,20 +108,24 @@ class _ShopProductList extends State<ShopProductList> {
               itemBuilder: (context, index) {
                 final product = items[index];
 
-                return ProductCard(product: product);
+                return ProductCard(product: product, onRefresh: _loadData,);
               },
             )
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddProductScreen()
-            )
+        onPressed: () async {
+          // Wait for "Add Screen" to return
+          final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AddProductScreen())
           );
+
+          // If added successfully, refresh the list
+          if (result == true) {
+            _loadData();
+          }
         },
         backgroundColor: Color(0xff464646),
         child: Icon(Icons.add,
