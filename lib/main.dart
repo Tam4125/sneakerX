@@ -5,7 +5,11 @@ import 'package:sneakerx/src/modules/seller/product/screens/product_addition.dar
 import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 import 'src/modules/product_detail/view/product_detail_view.dart';
-
+import 'package:sneakerx/src/modules/cart/view/empty_cart_view.dart';
+import 'package:sneakerx/src/modules/profile/view/empty_profile_view.dart';
+import 'package:sneakerx/src/modules/profile/view/settings_view.dart';
+import 'package:sneakerx/src/modules/profile/view/edit_profile_view.dart';
+import 'package:sneakerx/src/modules/profile/view/order_history_view.dart';
 void main() {
   runApp(
     MultiProvider(
@@ -30,7 +34,7 @@ class NeakerXApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         fontFamily: 'Roboto',
       ),
-      home: MainScreen(),
+      home: OrderHistoryView(),
     );
   }
 }
