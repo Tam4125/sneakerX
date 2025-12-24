@@ -70,6 +70,27 @@ class ApiClient {
     return response;
   }
 
+  // Generic PUT method
+  static Future<http.Response> put(String url, Map<String, dynamic>? body) async {
+    String? token = await TokenManager.getAccessToken();
+
+    final response = await http.put(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: body != null ? jsonEncode(body) : null,
+    );
+
+    if (response.statusCode == 401) {
+      // Recursively retry the PUT request after refreshing the token
+      return await _handleRefreshAndRetry(() => put(url, body));
+    }
+
+    return response;
+  }
+
   // Robust Multipart POST
   static Future<http.Response> postMultipart({
     required String url,

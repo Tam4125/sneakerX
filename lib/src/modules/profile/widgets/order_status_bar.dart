@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sneakerx/src/modules/profile/view/order_history_view.dart';
 
 class OrderStatusBar extends StatelessWidget {
   const OrderStatusBar({super.key});
@@ -29,10 +30,43 @@ class OrderStatusBar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildItem(Icons.receipt_long_outlined, "Chờ xác nhận"),
-              _buildItem(Icons.inventory_2_outlined, "Chờ lấy hàng"),
-              _buildItem(Icons.local_shipping_outlined, "Chờ giao hàng"),
-              _buildItem(Icons.star_border, "Đánh giá"),
+              _buildItem(
+                Icons.receipt_long_outlined,
+                "Chờ xác nhận",
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OrderHistoryView(initialIndex: 0,)
+                    )
+                  );
+                }
+              ),
+              _buildItem(
+                Icons.inventory_2_outlined,
+                "Chờ lấy hàng",
+                () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => OrderHistoryView(initialIndex: 1,)
+                      )
+                  );
+                }
+              ),
+              _buildItem(
+                Icons.local_shipping_outlined,
+                "Chờ giao hàng",
+                () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => OrderHistoryView(initialIndex: 2,)
+                      )
+                  );
+                }
+              ),
+              _buildItem(Icons.star_border, "Đánh giá", null),
             ],
           )
         ],
@@ -40,13 +74,16 @@ class OrderStatusBar extends StatelessWidget {
     );
   }
 
-  Widget _buildItem(IconData icon, String label) {
-    return Column(
-      children: [
-        Icon(icon, size: 28, color: Colors.black54),
-        const SizedBox(height: 6),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.black87)),
-      ],
+  Widget _buildItem(IconData icon, String label, VoidCallback? onPressed) {
+    return IconButton(
+      onPressed: onPressed,
+      icon: Column(
+        children: [
+          Icon(icon, size: 28, color: Colors.black54),
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.black87)),
+        ],
+      ),
     );
   }
 }

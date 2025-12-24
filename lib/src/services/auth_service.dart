@@ -9,7 +9,7 @@ import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_request.dar
 class AuthService {
   static const String baseUrl = "http://10.0.2.2:8080/auth";
 
-  Future<ApiResponse<dynamic>> registerUser(UserRegisterRequest request) async {
+  Future<ApiResponse<String>> registerUser(UserRegisterRequest request) async {
     final url = Uri.parse("$baseUrl/sign-up");
 
     try {
@@ -23,13 +23,13 @@ class AuthService {
       Map<String, dynamic> body = jsonDecode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return ApiResponse<dynamic>(
+        return ApiResponse<String>(
           success: body['success'] ?? true,
           message: body['message'] ?? "Registration successful",
           data: body['data']
         );
       } else {
-        return ApiResponse<dynamic>(
+        return ApiResponse<String>(
           success: body['success'] ?? false,
           message: body['message'] ?? "Registration failed",
           data: body['data']

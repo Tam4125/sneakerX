@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_response.dart';
+import 'package:sneakerx/src/modules/profile/view/settings_view.dart';
 import 'package:sneakerx/src/screens/seller_main_screen.dart';
 
 class ProfileHeader extends StatelessWidget {
@@ -52,7 +53,17 @@ class ProfileHeader extends StatelessWidget {
               ),
               Row(
                 children: [
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.settings_outlined, color: Colors.black87)),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SettingsView()
+                        )
+                      );
+                    },
+                    icon: const Icon(Icons.settings_outlined, color: Colors.black87)
+                  ),
                   Stack(children: [
                     IconButton(onPressed: () {}, icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black87)),
                     Positioned(right: 5, top: 5, child: Container(padding: const EdgeInsets.all(2), decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)), constraints: const BoxConstraints(minWidth: 16, minHeight: 16), child: const Text('53', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center))),
@@ -75,7 +86,6 @@ class ProfileHeader extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
                       image: DecorationImage(
-                        // --- SỬA TẠI ĐÂY: Dùng AssetImage cho file nội bộ ---
                           image: NetworkImage(user.avatarUrl),
                           fit: BoxFit.cover
                       ),

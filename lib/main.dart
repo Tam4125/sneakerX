@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 import 'package:sneakerx/src/modules/cart/view/cart_view.dart';
 import 'package:sneakerx/src/modules/seller/product/screens/my_product_list.dart';
@@ -6,8 +7,22 @@ import 'package:sneakerx/src/modules/seller/product/screens/product_addition.dar
 import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 import 'src/modules/product_detail/view/product_detail_view.dart';
+import 'package:sneakerx/src/modules/cart/view/empty_cart_view.dart';
+import 'package:sneakerx/src/modules/profile/view/empty_profile_view.dart';
+import 'package:sneakerx/src/modules/profile/view/settings_view.dart';
+import 'package:sneakerx/src/modules/profile/view/edit_profile_view.dart';
+import 'package:sneakerx/src/modules/profile/view/order_history_view.dart';
+void main() async {
 
-void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // FIX: Initialize Stripe with your Publishable Key
+  // Go to Stripe Dashboard -> Developers -> API Keys -> Publishable Key
+  Stripe.publishableKey = "pk_test_51ShBFGCc0iar3PLkGSvtsgu7olXysQJIMTcxc76IWQfZhFMg02QOlTuGz95tfDHb011p5p5sESoKxS2EC53PtEgc00cFCGDrHj";
+
+  // Optional: Apply settings
+  await Stripe.instance.applySettings();
+
   runApp(
     MultiProvider(
       providers: [

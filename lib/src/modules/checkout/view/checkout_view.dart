@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart'; // Import Stripe
+import 'package:provider/provider.dart';
+import 'package:sneakerx/src/models/enums/order_status.dart';
+import 'package:sneakerx/src/models/order.dart';
+import 'package:sneakerx/src/models/user_address.dart';
+import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_response.dart';
 import 'package:sneakerx/src/modules/cart/models/cart_model.dart';
-
-// 1. IMPORT CÁC FILE TRONG FOLDER CỦA BẠN
+import 'package:sneakerx/src/modules/checkout/dtos/create_order_request.dart';
+import 'package:sneakerx/src/modules/checkout/dtos/create_stripe_intent_request.dart';
+import 'package:sneakerx/src/modules/checkout/dtos/update_order_request.dart';
+import 'package:sneakerx/src/modules/profile/view/edit_profile_view.dart';
+import 'package:sneakerx/src/screens/main_screen.dart';
+import 'package:sneakerx/src/services/order_service.dart';
+import 'package:sneakerx/src/services/payment_service.dart';
+import 'package:sneakerx/src/services/user_service.dart';
+import 'package:sneakerx/src/utils/auth_provider.dart';
 import '../models/checkout_models.dart';
 import '../widgets/voucher_bottom_sheet.dart';
 import '../widgets/payment_method_sheet.dart';
@@ -16,31 +29,168 @@ class CheckoutView extends StatefulWidget {
 }
 
 class _CheckoutViewState extends State<CheckoutView> {
-  // --- STATE DỮ LIỆU ---
-  String _customerName = "Nguyễn Văn A";
-  String _phoneNumber = "0987.654.321";
-  String _address = "Số 123, Đường ABC, Quận XYZ, TP.HCM";
-  final TextEditingController _noteController = TextEditingController();
 
-  // Các biến lựa chọn
+  final UserService _userService = UserService();
+  final OrderService _orderService = OrderService();
+  final PaymentService _paymentService = PaymentService();
+  final TextEditingController _noteController = TextEditingController();
+  late UserSignInResponse _user;
+  late int _shopId;
+
+  bool _isLoading = false;
+
+  String _customerName = "Customer name";
+  String _phoneNumber = "Phone number";
+  String _address = "Address";
+  UserAddress? _userAddress;
+
   late ShippingMethod _selectedShipping;
-  late PaymentMethod _selectedPayment;
+  late PaymentMethodModel _selectedPayment;
   BankModel? _selectedBank;
   VoucherModel? _selectedVoucher;
 
   @override
   void initState() {
     super.initState();
-    // Mặc định chọn Giao hàng nhanh (30k)
-    _selectedShipping = ShippingMethod(id: 'GHN', name: "Giao Hàng Nhanh", estimateTime: "1-3 ngày", price: 30000);
-    // Mặc định chọn COD
-    _selectedPayment = PaymentMethod(id: 'COD', name: "Thanh toán khi nhận hàng (COD)", iconData: Icons.money);
+    _initializeData();
   }
+
+  void _initializeData() async {
+    _selectedShipping = ShippingMethod(id: 'GHN', name: "Giao Hàng Nhanh", estimateTime: "1-3 ngày", price: 30000);
+    _selectedPayment = PaymentMethodModel(id: 'COD', name: "Thanh toán khi nhận hàng (COD)", iconData: Icons.money);
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    _user = auth.currentUser!;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final addresses = await _userService.getAddresses();
+      if (addresses != null && addresses.isNotEmpty) {
+        _userAddress = addresses.first;
+        _customerName = _userAddress!.recipientName;
+        _phoneNumber = _userAddress!.phone;
+        _address = "${_userAddress!.addressLine}, ${_userAddress!.ward}, ${_userAddress!.district}, ${_userAddress!.provinceOrCity}";
+      }
+    } catch (e) {
+      print("Error loading data: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handlePlaceOrder() async {
+    if (_userAddress == null) {
+      _showMessage("Vui lòng thêm địa chỉ nhận hàng");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    String finalTransactionId = "COD_NO_ID";
+    String? stripeClientSecret;
+    OrderStatus orderStatus = OrderStatus.SHIPPED;
+
+    try {
+      // BƯỚC 1: Nếu là Stripe, tạo Intent TRƯỚC để lấy ID
+      if (_selectedPayment.id == 'STRIPE') {
+        orderStatus = OrderStatus.PENDING;
+        final stripeRequest = CreateStripeIntentRequest(
+            userId: _user.userId,
+            amount: finalTotal,
+            currency: "vnd",
+            userEmail: _user.email
+        );
+
+        // Gọi API tạo Intent (trả về clientSecret và transactionId)
+        final intentData = await _paymentService.createStripeIntent(stripeRequest);
+
+        if (intentData != null) {
+          finalTransactionId = intentData.transactionId; // ID này dùng để lưu Order
+          stripeClientSecret = intentData.clientSecret;  // Secret này dùng để hiện UI
+        } else {
+          throw Exception("Không thể khởi tạo thanh toán Stripe");
+        }
+      }
+
+      // BƯỚC 2: Lưu đơn hàng vào Database (Status: PENDING)
+      CreateOrderRequest orderRequest = CreateOrderRequest(
+        shopId: _shopId,
+        addressId: _userAddress!.addressId,
+        shippingFee: _selectedShipping.price,
+        cartItems: widget.checkoutItems.map((cartItem) => cartItem.itemId).toList(),
+        provider: _selectedPayment.id,
+        transactionId: finalTransactionId,
+        orderStatus: orderStatus.name,
+      );
+
+      final order = await _orderService.createOrder(orderRequest);
+
+      if (order == null) throw Exception("Lưu đơn hàng thất bại");
+
+      // BƯỚC 3: Nếu là Stripe, hiển thị màn hình thanh toán
+      if (_selectedPayment.id == 'STRIPE' && stripeClientSecret != null) {
+        try {
+          // Initialize Sheet
+          await Stripe.instance.initPaymentSheet(
+            paymentSheetParameters: SetupPaymentSheetParameters(
+              paymentIntentClientSecret: stripeClientSecret,
+              merchantDisplayName: 'SneakerX Store',
+              style: ThemeMode.light,
+            ),
+          );
+
+          setState(() => _isLoading = false); // Tắt loading để hiện Sheet
+
+          // Show Sheet - Người dùng thanh toán tại đây
+          await Stripe.instance.presentPaymentSheet();
+
+          _showMessage("Thanh toán thành công!");
+
+          try {
+            Order? updatedOrder = await _orderService.updateOrderStatus(
+              UpdateOrderStatusRequest(orderStatus: OrderStatus.PAID, orderId: order.orderId)
+            );
+            if(updatedOrder != null) {
+              _showMessage("Lỗi cập nhật trạng thái đơn hàng sau thanh toán thành công!");
+            }
+          } catch (e) {
+            _showMessage("Lỗi cập nhật trạng thái đơn hàng sau thanh toán!");
+          }
+
+        } on StripeException catch (e) {
+          // Người dùng tắt popup hoặc thẻ lỗi
+          // KHÔNG xóa đơn hàng. Đơn hàng vẫn tồn tại (PENDING).
+          if (e.error.code == FailureCode.Canceled) {
+            _showMessage("Đã lưu đơn hàng. Bạn có thể thanh toán lại trong Lịch sử đơn hàng.");
+          } else {
+            _showMessage("Lỗi thanh toán: ${e.error.localizedMessage}");
+          }
+        }
+      } else {
+        _showMessage("Đặt hàng thành công!");
+      }
+
+      // BƯỚC 4: Điều hướng về màn hình chính (Dù thanh toán hay chưa)
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 3)),
+              (route) => false,
+        );
+      }
+
+    } catch (e) {
+      _showMessage("Lỗi: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
 
   // --- TÍNH TOÁN TIỀN ---
   double get subTotal => widget.checkoutItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
   double get shippingFee => _selectedShipping.price;
-
   double get discountAmount {
     if (_selectedVoucher == null) return 0;
     if (_selectedVoucher!.isFreeShip) {
@@ -48,14 +198,13 @@ class _CheckoutViewState extends State<CheckoutView> {
     }
     return _selectedVoucher!.discountValue;
   }
-
   double get finalTotal {
     double total = subTotal + shippingFee - discountAmount;
     return total > 0 ? total : 0;
   }
-
   String formatCurrency(double amount) => "${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}đ";
 
+  // --- UI ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,7 +221,7 @@ class _CheckoutViewState extends State<CheckoutView> {
               padding: const EdgeInsets.only(bottom: 20),
               child: Column(
                 children: [
-                  _buildAddressSection(), // <--- Đã sửa để bấm được
+                  _buildAddressSection(),
                   _buildProductList(),
                   _buildShippingSection(),
                   _buildMessageInput(),
@@ -90,13 +239,21 @@ class _CheckoutViewState extends State<CheckoutView> {
     );
   }
 
-  // --- CÁC WIDGET CON ---
-
-  // 1. ĐỊA CHỈ (ĐÃ SỬA: Thêm onTap và hàm _showEditAddressDialog)
   Widget _buildAddressSection() => Container(
       color: Colors.white, margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        onTap: _showEditAddressDialog, // <--- BẮT SỰ KIỆN TẠI ĐÂY
+        onTap: () async {
+          final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => EditProfileView(isFromCheckOut: true,))
+          );
+
+          if(result) {
+            setState(() {
+              _initializeData();
+            });
+          }
+        },
         leading: const Icon(Icons.location_on_outlined, color: Colors.green,),
         title: const Text("Địa chỉ nhận hàng", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
         subtitle: Text("$_customerName | $_phoneNumber\n$_address"),
@@ -104,52 +261,7 @@ class _CheckoutViewState extends State<CheckoutView> {
       )
   );
 
-  // Hàm hiển thị Popup sửa địa chỉ
-  void _showEditAddressDialog() {
-    final nameCtrl = TextEditingController(text: _customerName);
-    final phoneCtrl = TextEditingController(text: _phoneNumber);
-    final addressCtrl = TextEditingController(text: _address);
 
-    showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-        builder: (context) => Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 20, right: 20, top: 20),
-          child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text("Địa chỉ nhận hàng", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: "Họ và tên", border: OutlineInputBorder())),
-                const SizedBox(height: 10),
-                TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: "SĐT", border: OutlineInputBorder())),
-                const SizedBox(height: 10),
-                TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: "Địa chỉ", border: OutlineInputBorder())),
-                const SizedBox(height: 20),
-                SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B5FBF)),
-                        onPressed: (){
-                          setState(() {
-                            _customerName = nameCtrl.text;
-                            _phoneNumber = phoneCtrl.text;
-                            _address = addressCtrl.text;
-                          });
-                          Navigator.pop(context);
-                        },
-                        child: const Text("Xác nhận", style: TextStyle(color: Colors.white))
-                    )
-                ),
-                const SizedBox(height: 20),
-              ]),
-        )
-    );
-  }
-
-  // 2. SHIPPING
   Widget _buildShippingSection() {
     return Container(
       color: Colors.white,
@@ -161,50 +273,37 @@ class _CheckoutViewState extends State<CheckoutView> {
             backgroundColor: Colors.transparent,
             builder: (context) => ShippingMethodSheet(
               selectedShipping: _selectedShipping,
-              onShippingSelected: (newMethod) {
-                setState(() => _selectedShipping = newMethod);
-              },
+              onShippingSelected: (newMethod) => setState(() => _selectedShipping = newMethod),
             ),
           );
         },
         leading: const Icon(Icons.local_shipping_outlined, color: Colors.green),
         title: const Text("Phương thức vận chuyển", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(_selectedShipping.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-            Text(_selectedShipping.estimateTime, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(formatCurrency(_selectedShipping.price), style: const TextStyle(fontWeight: FontWeight.bold)),
-            const Icon(Icons.chevron_right, color: Colors.grey),
-          ],
-        ),
+        subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(_selectedShipping.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+          Text(_selectedShipping.estimateTime, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        ]),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(formatCurrency(_selectedShipping.price), style: const TextStyle(fontWeight: FontWeight.bold)),
+          const Icon(Icons.chevron_right, color: Colors.grey),
+        ]),
       ),
     );
   }
 
-  // 3. VOUCHER & PAYMENT
   Widget _buildVoucherAndPayment() {
     return Container(
       color: Colors.white,
       child: Column(
         children: [
-          // VOUCHER
           ListTile(
             leading: const Icon(Icons.confirmation_number_outlined, color: Color(0xFF8B5FBF)),
-            title: const Text("NeakerX Voucher"),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(_selectedVoucher != null ? "-${formatCurrency(discountAmount)}" : "Chọn mã",
-                    style: TextStyle(color: _selectedVoucher != null ? Colors.orange : Colors.grey)),
-                const Icon(Icons.chevron_right, color: Colors.grey),
-              ],
-            ),
+            title: const Text("Vouchers"),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(_selectedVoucher != null ? "-${formatCurrency(discountAmount)}" : "Chọn mã",
+                  style: TextStyle(color: _selectedVoucher != null ? Colors.orange : Colors.grey)),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ]),
             onTap: () {
               showModalBottomSheet(
                 context: context, backgroundColor: Colors.transparent,
@@ -216,8 +315,6 @@ class _CheckoutViewState extends State<CheckoutView> {
             },
           ),
           const Divider(height: 1, indent: 15, endIndent: 15),
-
-          // PAYMENT
           ListTile(
             leading: const Icon(Icons.payment, color: Color(0xFF8B5FBF)),
             title: const Text("Phương thức thanh toán"),
@@ -244,7 +341,6 @@ class _CheckoutViewState extends State<CheckoutView> {
     );
   }
 
-  // CÁC WIDGET CÒN LẠI (SẢN PHẨM, TIN NHẮN, BILL, BOTTOM BAR)
   Widget _buildProductList() => Container(
       color: Colors.white, padding: const EdgeInsets.all(15), margin: const EdgeInsets.only(bottom: 10),
       child: Column(
@@ -301,12 +397,19 @@ class _CheckoutViewState extends State<CheckoutView> {
         const SizedBox(width: 15),
         ElevatedButton(
           style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B5FBF), padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12)),
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Đặt hàng thành công! (${_selectedPayment.name})")));
-          },
-          child: const Text("Đặt hàng", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          // FIX: Call the new handler here
+          onPressed: _isLoading ? null : _handlePlaceOrder,
+          child: _isLoading
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              : const Text("Đặt hàng", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         )
       ],
     ),
   );
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, backgroundColor: Colors.grey[800]),
+    );
+  }
 }

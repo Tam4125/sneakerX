@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sneakerx/src/modules/auth_features/views/introduction_screen.dart';
+import 'package:sneakerx/src/modules/profile/view/empty_profile_view.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/order_status_bar.dart';
@@ -21,14 +21,14 @@ class _ProfileViewState extends State<ProfileView> {
     final user = authProvider.currentUser;
 
     if(authProvider.isGuest) {
-      return IntroductionScreen();
+      return EmptyProfileView();
     } else {
       return Scaffold(
         backgroundColor: const Color(0xFFF5F5F5), // Màu nền xám nhạt toàn trang
         body: SingleChildScrollView(
           child: Column(
             children: [
-              // 1. Header (Cam)
+              // 1. Header 
               ProfileHeader(user: user!),
               // 2. Đơn mua (Order Status)
               OrderStatusBar(),

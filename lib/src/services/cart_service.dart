@@ -47,7 +47,6 @@ class CartService {
       Map<String, dynamic> jsonMap = jsonDecode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        Map<String, dynamic> jsonMap = jsonDecode(response.body);
 
         // Parse the ApiResponse wrapper first
         final apiResponse = ApiResponse<Cart>.fromJson(

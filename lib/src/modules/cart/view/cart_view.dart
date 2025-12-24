@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:sneakerx/src/models/cart.dart';
+import 'package:provider/provider.dart';
 import 'package:sneakerx/src/models/product.dart';
 import 'package:sneakerx/src/modules/cart/models/cart_model.dart';
+import 'package:sneakerx/src/modules/cart/view/empty_cart_view.dart';
 import 'package:sneakerx/src/services/cart_service.dart';
+import 'package:sneakerx/src/utils/auth_provider.dart';
 import '../../checkout/view/checkout_view.dart';
 
 class CartView extends StatefulWidget {
@@ -71,16 +73,19 @@ class _CartViewState extends State<CartView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+
+
+    return authProvider.isGuest
+        ? EmptyCartView()
+        : Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: const Text(
           "Giỏ hàng",
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),

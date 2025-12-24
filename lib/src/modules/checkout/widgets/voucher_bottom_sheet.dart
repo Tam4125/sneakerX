@@ -11,7 +11,6 @@ class VoucherBottomSheet extends StatelessWidget {
     required this.onVoucherSelected,
   });
 
-  // Danh sách Voucher (Giả lập)
   final List<VoucherModel> _vouchers = [
     VoucherModel(
         id: '1', title: "Freeship Xtra", subtitle: "Giảm tối đa 30k ship",

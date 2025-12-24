@@ -252,7 +252,7 @@ class _AddToCartSheetState extends State<AddToCartSheet> {
                 }
               },
               child: _isLoading
-                ? CircularProgressIndicator(color: AppConfig.primary,)
+                ? Center(child: CircularProgressIndicator(color: Colors.white,),)
                 : Text(
                     widget.isBuyNow ? "Mua ngay" : "Thêm vào giỏ hàng",
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
