@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart'; // Import Stripe
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 import 'package:sneakerx/src/models/enums/order_status.dart';
 import 'package:sneakerx/src/models/order.dart';
