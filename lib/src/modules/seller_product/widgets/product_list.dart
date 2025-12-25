@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sneakerx/src/models/product.dart';
-import 'package:sneakerx/src/modules/seller/product/screens/product_edit.dart';
+import 'package:sneakerx/src/modules/seller_product/screens/product_edit.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;

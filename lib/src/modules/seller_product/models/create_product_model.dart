@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:sneakerx/src/modules/seller/models/create_variant_model.dart';
+import 'package:sneakerx/src/modules/seller_product/models/create_variant_model.dart';
+
 
 class CreateProductRequest {
   final String name;

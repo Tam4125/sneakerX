@@ -3,7 +3,7 @@
 // import 'package:google_fonts/google_fonts.dart';
 // import 'package:go_router/go_router.dart';
 // import 'package:snkrxx/widgets/finance/finance_card.dart';
-// import 'package:snkrxx/widgets/seller/icon_button_widget.dart';
+// import 'package:snkrxx/widgets/seller_product/icon_button_widget.dart';
 //
 //
 // class FinanceUi extends StatefulWidget {

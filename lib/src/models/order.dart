@@ -5,7 +5,6 @@ import 'package:sneakerx/src/models/payment.dart';
 class Order {
   final int orderId;
   final int userId;
-  final int shopId;
   final int addressId;
   final double totalPrice;
   final double shippingFee;
@@ -16,7 +15,6 @@ class Order {
   Order({
     required this.orderId,
     required this.userId,
-    required this.shopId,
     required this.addressId,
     required this.totalPrice,
     required this.shippingFee,
@@ -29,7 +27,6 @@ class Order {
     return Order(
       orderId: json['orderId'],
       userId: json['userId'],
-      shopId: json['shopId'],
       addressId: json['addressId'],
       totalPrice: json['totalPrice'],
       shippingFee: json['shippingFee'],

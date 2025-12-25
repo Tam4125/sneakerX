@@ -1,13 +1,18 @@
 import 'dart:convert';
 
 import 'package:http_parser/http_parser.dart';
+import 'package:provider/provider.dart';
+import 'package:sneakerx/src/models/order.dart';
+import 'package:sneakerx/src/models/order_item.dart';
 import 'package:sneakerx/src/models/product.dart';
 import 'package:sneakerx/src/models/shops.dart';
 import 'package:http/http.dart' as http;
-import 'package:sneakerx/src/modules/seller/models/create_product_model.dart';
-import 'package:sneakerx/src/modules/seller/models/update_product_request.dart';
+import 'package:sneakerx/src/modules/seller_product/models/create_product_model.dart';
+import 'package:sneakerx/src/modules/seller_product/models/update_product_request.dart';
+import 'package:sneakerx/src/modules/seller_signup/dtos/create_shop_request.dart';
 import 'package:sneakerx/src/utils/api_client.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
+import 'package:sneakerx/src/utils/auth_provider.dart';
 
 
 class ShopService {
@@ -159,6 +164,94 @@ class ShopService {
       }
     } catch (e) {
       throw Exception("Update product service error: $e");
+    }
+  }
+
+  Future<List<OrderItem>?> gettShopOrderItems(int shopId) async {
+    String url = "$baseUrl/$shopId/orderItems";
+
+    try {
+      final response = await ApiClient.get(url);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Map<String, dynamic> jsonMap = jsonDecode(response.body);
+
+        if(response.body.isEmpty) return [];
+        final List orderItemList = jsonMap['data'] ?? [];
+        final orderItems =  orderItemList.map((order) {
+          return OrderItem.fromJson(order as Map<String, dynamic>);
+        }).toList();
+
+        return orderItems;
+      } else {
+        final errorMap = jsonDecode(response.body);
+        throw Exception(errorMap['message'] ?? "Failed get shop orders");
+      }
+    } catch (e) {
+      throw Exception("Failed get shop orders: $e");
+    }
+  }
+
+  Future<List<Order>?> gettShopOrders(int shopId) async {
+    String url = "$baseUrl/$shopId/orders";
+
+    try {
+      final response = await ApiClient.get(url);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Map<String, dynamic> jsonMap = jsonDecode(response.body);
+
+        if(response.body.isEmpty) return [];
+        final List orderList = jsonMap['data'] ?? [];
+        final orders =  orderList.map((order) {
+          return Order.fromJson(order as Map<String, dynamic>);
+        }).toList();
+
+        return orders;
+      } else {
+        final errorMap = jsonDecode(response.body);
+        throw Exception(errorMap['message'] ?? "Failed get shop orders");
+      }
+    } catch (e) {
+      throw Exception("Failed get shop orders: $e");
+    }
+  }
+
+
+  Future<Shop?> createShop(CreateShopRequest request) async {
+    final url = "$baseUrl";
+
+    // 1. Prepare Fields Map
+    final fields = <String, String>{
+      'shopName': request.shopName,
+      'shopDescription': request.shopDescription,
+    };
+
+    try {
+      final response = await ApiClient.postMultipartOneImage(
+          url: url,
+          fields: fields,
+          file: request.shopLogo,
+          fileField: "shopLogo"
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        Map<String, dynamic> jsonMap = jsonDecode(response.body);
+
+        // Parse the ApiResponse wrapper first
+        final apiResponse = ApiResponse<Shop>.fromJson(
+            jsonMap,
+                (data) => Shop.fromJson(data as Map<String, dynamic>)
+        );
+
+        return apiResponse.data;
+      } else {
+        // Parse error message from backend if available
+        final errorMap = jsonDecode(response.body);
+        throw Exception(errorMap['message'] ?? "Failed to add product");
+      }
+    } catch (e) {
+      throw Exception("Service error: $e");
     }
   }
 

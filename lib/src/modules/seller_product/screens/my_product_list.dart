@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:sneakerx/src/models/shops.dart';
-import 'package:sneakerx/src/modules/seller/product/screens/product_addition.dart';
-import 'package:sneakerx/src/modules/seller/product/widgets/product_list.dart';
-import 'package:sneakerx/src/modules/seller/widgets/seller/icon_button_widget.dart';
+import 'package:sneakerx/src/modules/seller_dashboard/widgets/icon_button_widget.dart';
+import 'package:sneakerx/src/modules/seller_product/screens/product_addition.dart';
+import 'package:sneakerx/src/modules/seller_product/widgets/product_list.dart';
 import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/services/shop_service.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
@@ -38,7 +38,6 @@ class _ShopProductList extends State<ShopProductList> {
       }
     });
   }
-
 
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -102,15 +101,46 @@ class _ShopProductList extends State<ShopProductList> {
 
           final items = snapshot.data!.products;
 
-          return SafeArea(
-            child: ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final product = items[index];
+          return items.isNotEmpty
+              ? SafeArea(
+                child: ListView.builder(
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final product = items[index];
 
-                return ProductCard(product: product, onRefresh: _loadData,);
-              },
-            )
+                    return ProductCard(product: product, onRefresh: _loadData,);
+                  },
+                )
+              )
+              : SafeArea(
+            child: Column(
+              children: [
+                // 1. Icon & Thông báo trống
+                Container(
+                  height: 300,
+                  width: double.infinity,
+                  color: const Color(0xFFF5F5F5),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 100, height: 100,
+                        decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage("assets/images/empty_order.png"),
+                              // Nếu chưa có ảnh, dùng Icon thay thế:
+                              // icon: Icon(Icons.assignment_outlined, size: 60, color: Colors.grey[300]),
+                            )
+                        ),
+                        child: Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey[300]), // Icon thay thế
+                      ),
+                      const SizedBox(height: 20),
+                      Text("Bạn chưa có sản phẩm nào cả", style: TextStyle(color: Colors.black54, fontSize: 16)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),

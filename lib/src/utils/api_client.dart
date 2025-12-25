@@ -144,6 +144,56 @@ class ApiClient {
     }
   }
 
+  // Robust Multipart POST (File is now Optional)
+  static Future<http.Response> postMultipartOneImage({
+    required String url,
+    required Map<String, String> fields,
+    File? file, // 1. Remove 'required' and make it nullable
+    required String fileField,
+  }) async {
+    String? token = await TokenManager.getAccessToken();
+
+    // 1. Build the Multipart Request
+    var request = http.MultipartRequest('POST', Uri.parse(url));
+
+    // 2. Add Headers
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    // 3. Add Text Fields
+    request.fields.addAll(fields);
+
+    // 4. Add File ONLY if it is not null
+    if (file != null) {
+      request.files.add(await http.MultipartFile.fromPath(
+        fileField,
+        file.path,
+      ));
+    }
+
+    // 5. Send & Convert
+    try {
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      // 6. Check for 401 and Retry
+      if (response.statusCode == 401) {
+        return await _handleRefreshAndRetry(() => postMultipartOneImage(
+          url: url,
+          fields: fields,
+          file: file, // Pass the nullable file
+          fileField: fileField,
+        ));
+      }
+
+      return response;
+    } catch (e) {
+      throw Exception("Upload failed: $e");
+    }
+  }
+
+
   // Robust Multipart PUT
   static Future<http.Response> putMultipart({
     required String url,

@@ -160,5 +160,21 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> refreshShopStatus() async {
+    try {
+      final shopResponse = await _shopService.getCurrentUserShop();
+
+      if (shopResponse != null) {
+        _shopId = shopResponse.shopId;
+        print("Shop created/found. ID: $_shopId");
+        await UserInfoManager.saveShopId(_shopId!);
+      }
+      // Important: Notify UI to switch from "Create Shop" to "Seller Dashboard"
+      notifyListeners();
+    } catch (e) {
+      print("Failed to refresh shop status: $e");
+    }
+  }
+
 
 }

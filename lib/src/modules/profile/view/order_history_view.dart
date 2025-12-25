@@ -118,7 +118,7 @@ class _OrderHistoryViewState extends State<OrderHistoryView> with SingleTickerPr
                     width: 100, height: 100,
                     decoration: const BoxDecoration(
                         image: DecorationImage(
-                          image: AssetImage("assets/images/empty_order.png"), // Bạn cần thêm ảnh này hoặc dùng Icon
+                          image: AssetImage("assets/images/empty_order.png"),
                           // Nếu chưa có ảnh, dùng Icon thay thế:
                           // icon: Icon(Icons.assignment_outlined, size: 60, color: Colors.grey[300]),
                         )

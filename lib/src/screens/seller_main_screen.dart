@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sneakerx/src/modules/seller/product/screens/my_product_list.dart';
+import 'package:sneakerx/src/modules/seller_dashboard/screens/seller_ui.dart';
+import 'package:sneakerx/src/modules/seller_info/screens/seller_info.dart';
+import 'package:sneakerx/src/modules/seller_order/screens/seller_orders.dart';
+import 'package:sneakerx/src/modules/seller_product/screens/my_product_list.dart';
 
 class SellerMainScreen extends StatefulWidget {
   const SellerMainScreen({super.key});
@@ -14,11 +17,10 @@ class _MainSellerScreenState extends State<SellerMainScreen> {
 
   // 1. Define the list of screens for each tab
   final List<Widget> _pages = [
-    const Center(child: Text("Dashboard")),
+    const SellerDashboardScreen(),
     const ShopProductList(), // Index 1: Placeholder
-    const Center(child: Text("Orders")),
-    const Center(child: Text("Finance")), // Index 2: Placeholder
-    const Center(child: Text("Profile")),
+    const SellerOrders(),
+    const SellerInfo(),
   ];
 
   void _onItemTapped(int index) {
@@ -59,10 +61,6 @@ class _MainSellerScreenState extends State<SellerMainScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.note_alt),
               label: 'Orders',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.monetization_on),
-              label: 'Finance',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.store),

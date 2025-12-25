@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:sneakerx/src/modules/seller/models/update_variant_request.dart';
+import 'package:sneakerx/src/modules/seller_product/models/update_variant_request.dart';
+
 
 class UpdateProductRequest {
   final String name;

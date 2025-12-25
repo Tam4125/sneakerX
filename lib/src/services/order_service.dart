@@ -90,4 +90,30 @@ class OrderService {
 
   }
 
+  Future<Order?> getOrderDetail(int orderId) async {
+    String url = "$baseUrl/$orderId";
+
+    try {
+      final response = await ApiClient.get(url);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+
+        print("ORDER DETAIL ??? ${response.body}");
+
+        Map<String, dynamic> jsonMap = jsonDecode(response.body);
+
+
+        final order = jsonMap['data'];
+        return Order.fromJson(order);
+
+      } else {
+        final errorMap = jsonDecode(response.body);
+        throw Exception(errorMap['message'] ?? "Failed order detail");
+      }
+    } catch (e) {
+      throw Exception("Failed order detail: $e");
+    }
+
+  }
+
 }

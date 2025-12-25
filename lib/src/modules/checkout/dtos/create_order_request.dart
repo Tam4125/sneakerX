@@ -1,5 +1,4 @@
 class CreateOrderRequest {
-  final int shopId;
   final int addressId;
   final double shippingFee;
   final List<int> cartItems;
@@ -8,7 +7,6 @@ class CreateOrderRequest {
   final String orderStatus;
 
   CreateOrderRequest({
-    required this.shopId,
     required this.addressId,
     required this.shippingFee,
     required this.cartItems,
@@ -19,7 +17,6 @@ class CreateOrderRequest {
 
   Map<String, dynamic> toJson() {
     return {
-      'shopId': shopId,
       'addressId': addressId,
       'shippingFee': shippingFee,
       'cartItems': cartItems,

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_response.dart';
 import 'package:sneakerx/src/modules/profile/view/settings_view.dart';
+import 'package:sneakerx/src/modules/seller_signup/screens/seller_signup.dart';
 import 'package:sneakerx/src/screens/seller_main_screen.dart';
+import 'package:sneakerx/src/utils/auth_provider.dart';
 
 class ProfileHeader extends StatelessWidget {
   final UserSignInResponse user;
@@ -12,6 +15,8 @@ class ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
     return Container(
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 10,
@@ -32,13 +37,33 @@ class ProfileHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              ElevatedButton.icon(
+              auth.hasShop
+              ? ElevatedButton.icon(
                 onPressed: () {
                   Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => SellerMainScreen()
-                    )
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => SellerMainScreen()
+                      )
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black87,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                icon: const Icon(Icons.storefront_outlined, size: 18),
+                label: const Row(children: [Text("Xem shop", style: TextStyle(fontWeight: FontWeight.bold)), SizedBox(width: 4), Icon(Icons.chevron_right, size: 18)]),
+              )
+              : ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => SellerSignup()
+                      )
                   );
                 },
                 style: ElevatedButton.styleFrom(

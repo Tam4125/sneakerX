@@ -3,6 +3,7 @@ import 'package:sneakerx/src/models/product.dart';
 class OrderItem {
   final int orderItemId;
   final int orderId;
+  final int shopId;
   final Product product;
   final int sizeId;
   final int colorId;
@@ -12,6 +13,7 @@ class OrderItem {
   OrderItem({
     required this.orderItemId,
     required this.orderId,
+    required this.shopId,
     required this.product,
     required this.sizeId,
     required this.colorId,
@@ -23,6 +25,7 @@ class OrderItem {
     return OrderItem(
       orderItemId: json['orderItemId'],
       orderId: json['orderId'],
+      shopId: json['shopId'],
       product: Product.fromJson(json['product']),
       sizeId: json['sizeId'],
       colorId: json['colorId'],

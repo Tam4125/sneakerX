@@ -35,7 +35,6 @@ class _CheckoutViewState extends State<CheckoutView> {
   final PaymentService _paymentService = PaymentService();
   final TextEditingController _noteController = TextEditingController();
   late UserSignInResponse _user;
-  late int _shopId;
 
   bool _isLoading = false;
 
@@ -115,7 +114,6 @@ class _CheckoutViewState extends State<CheckoutView> {
 
       // BƯỚC 2: Lưu đơn hàng vào Database (Status: PENDING)
       CreateOrderRequest orderRequest = CreateOrderRequest(
-        shopId: _shopId,
         addressId: _userAddress!.addressId,
         shippingFee: _selectedShipping.price,
         cartItems: widget.checkoutItems.map((cartItem) => cartItem.itemId).toList(),

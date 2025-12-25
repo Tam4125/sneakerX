@@ -5,8 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/models/product.dart';
-import 'package:sneakerx/src/modules/seller/models/update_product_request.dart';
-import 'package:sneakerx/src/modules/seller/models/update_variant_request.dart';
+import 'package:sneakerx/src/modules/seller_product/models/update_product_request.dart';
+import 'package:sneakerx/src/modules/seller_product/models/update_variant_request.dart';
 import 'package:sneakerx/src/services/shop_service.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 

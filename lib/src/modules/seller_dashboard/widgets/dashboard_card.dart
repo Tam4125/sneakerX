@@ -54,6 +54,31 @@ class DashboardCard extends StatelessWidget {
                         _buildStatItem('Trả hàng/Hoàn tiền:', returnRate),
                         const SizedBox(height: 16),
                         _buildStatItem('Phản hồi đánh giá:', reviewCount),
+                        const SizedBox(height: 30,),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Doanh thu",
+                              style: GoogleFonts.anton(
+                                color: Colors.white,
+                                fontSize: 40,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.6,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              revenue,
+                              style: GoogleFonts.inter(
+                                color: Colors.yellow,
+                                fontSize: 36,
+                                fontWeight: FontWeight.w500,
+                                letterSpacing: -0.6,
+                              ),
+                            ),
+                          ],
+                        )
                       ],
                     ),
                   ],
