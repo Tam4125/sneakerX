@@ -11,7 +11,6 @@ import com.example.sneakerx.repositories.UserRepository;
 import com.example.sneakerx.services.AuthService;
 import com.example.sneakerx.utils.ApiResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,12 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
-
     private final AuthService authService;
-
-    private final UserRepository userRepository;
-
-    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
 
     @PostMapping("/sign-up")
     public ResponseEntity<ApiResponse<String>> signUp(

@@ -2,7 +2,6 @@ package com.example.sneakerx.controllers;
 
 import com.example.sneakerx.dtos.product.ProductDetailResponse;
 import com.example.sneakerx.dtos.product.ProductSearchRequest;
-import com.example.sneakerx.entities.Product;
 import com.example.sneakerx.services.ProductService;
 import com.example.sneakerx.utils.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
