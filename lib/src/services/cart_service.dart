@@ -1,12 +1,13 @@
 import 'dart:convert';
 
+import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/models/cart.dart';
 import 'package:sneakerx/src/modules/cart/dtos/save_to_cart_request.dart';
 import 'package:sneakerx/src/utils/api_client.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
 
 class CartService {
-  static const String baseUrl = "http://10.0.2.2:8080/carts";
+  static const String baseUrl = "${AppConfig.baseUrl}/carts";
 
   Future<Cart?> getCurrentUserCart() async {
     final url = "$baseUrl/me";

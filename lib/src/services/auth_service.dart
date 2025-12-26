@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_response.dart';
 import 'package:sneakerx/src/utils/api_client.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
@@ -7,7 +8,7 @@ import 'package:sneakerx/src/modules/auth_features/dtos/user_register_request.da
 import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_request.dart';
 
 class AuthService {
-  static const String baseUrl = "http://10.0.2.2:8080/auth";
+  static const String baseUrl = "${AppConfig.baseUrl}/auth";
 
   Future<ApiResponse<String>> registerUser(UserRegisterRequest request) async {
     final url = Uri.parse("$baseUrl/sign-up");

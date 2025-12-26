@@ -1,10 +1,11 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/models/category.dart';
 
 class CategoryService {
-  static const String baseUrl = "http://10.0.2.2:8080/categories";
+  static const String baseUrl = "${AppConfig.baseUrl}/categories";
 
   Future<List<ProductCategory>?> getCategories({int page = 0, int size = 5}) async {
     final url = Uri.parse("$baseUrl?page=$page&size=$size");

@@ -1,12 +1,13 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/modules/search/dtos/filter_query.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
 import 'package:sneakerx/src/models/product.dart';
 
 class ProductService {
-  static const String baseUrl = "http://10.0.2.2:8080/products";
+  static const String baseUrl = "${AppConfig.baseUrl}/products";
 
   // Fetch Product Detail by ID
   Future<Product?> getProductById(int productId) async {

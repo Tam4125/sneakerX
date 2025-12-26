@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http_parser/http_parser.dart';
 import 'package:provider/provider.dart';
+import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/models/order.dart';
 import 'package:sneakerx/src/models/order_item.dart';
 import 'package:sneakerx/src/models/product.dart';
@@ -16,7 +17,7 @@ import 'package:sneakerx/src/utils/api_response.dart';
 
 
 class ShopService {
-  static const String baseUrl = "http://10.0.2.2:8080/shops";
+  static const String baseUrl = "${AppConfig.baseUrl}/shops";
 
   Future<Shop?> getCurrentUserShop() async {
     final url = "$baseUrl/me";

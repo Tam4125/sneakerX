@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/models/order.dart';
 import 'package:sneakerx/src/models/user.dart';
 import 'package:sneakerx/src/models/user_address.dart';
@@ -11,7 +12,7 @@ import 'package:sneakerx/src/utils/api_client.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
 
 class UserService {
-  static const String baseUrl = "http://10.0.2.2:8080/users";
+  static const String baseUrl = "${AppConfig.baseUrl}/users";
 
   Future<ApiResponse<UserSignInResponse>> getCurrentUser() async {
     String url = "$baseUrl/me";

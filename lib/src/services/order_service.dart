@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ffi';
 
+import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/models/order.dart';
 import 'package:sneakerx/src/modules/checkout/dtos/create_order_request.dart';
 import 'package:sneakerx/src/modules/checkout/dtos/update_order_request.dart';
@@ -8,7 +9,7 @@ import 'package:sneakerx/src/utils/api_client.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
 
 class OrderService {
-  static const String baseUrl = "http://10.0.2.2:8080/orders";
+  static const String baseUrl = "${AppConfig.baseUrl}/orders";
 
   Future<Order?> createOrder(CreateOrderRequest request) async {
     final url = "$baseUrl";

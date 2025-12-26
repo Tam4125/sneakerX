@@ -33,4 +33,6 @@ class AppConfig {
       default: return "Màu khác";
     }
   }
+
+  static const baseUrl = "https://sneakerx-tlzp.onrender.com";
 }
