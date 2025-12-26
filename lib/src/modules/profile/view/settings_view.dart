@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sneakerx/src/modules/profile/view/edit_address_view.dart';
 import 'package:sneakerx/src/modules/profile/view/edit_profile_view.dart';
 import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/services/auth_service.dart';
@@ -52,10 +53,15 @@ class _SettingsViewState extends State<SettingsView> {
           _buildSectionHeader("Tài khoản của tôi"),
           _buildSectionGroup([
             _buildSettingItem(context, "Tài khoản & Bảo mật",
-                onTap: () => _showToast(context, "Quản lý mật khẩu, email, sđt...")),
+                onTap: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => EditProfileView())
+                  );
+                },),
             _buildDivider(),
             _buildSettingItem(context, "Địa Chỉ",
-                onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => EditProfileView()));}),
+                onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => EditAddressView()));}),
             _buildDivider(),
             _buildSettingItem(context, "Tài khoản / Thẻ ngân hàng",
                 onTap: () => _showToast(context, "Liên kết ngân hàng và thẻ tín dụng")),
@@ -227,7 +233,7 @@ class _SettingsViewState extends State<SettingsView> {
 
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (_) => const MainScreen(initialIndex: 4,)),
+                  MaterialPageRoute(builder: (_) => const MainScreen(initialIndex: 3,)),
                       (route) => false,
                 );
               },

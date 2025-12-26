@@ -9,7 +9,7 @@ import 'package:sneakerx/src/modules/cart/models/cart_model.dart';
 import 'package:sneakerx/src/modules/checkout/dtos/create_order_request.dart';
 import 'package:sneakerx/src/modules/checkout/dtos/create_stripe_intent_request.dart';
 import 'package:sneakerx/src/modules/checkout/dtos/update_order_request.dart';
-import 'package:sneakerx/src/modules/profile/view/edit_profile_view.dart';
+import 'package:sneakerx/src/modules/profile/view/edit_address_view.dart';
 import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/services/order_service.dart';
 import 'package:sneakerx/src/services/payment_service.dart';
@@ -243,7 +243,7 @@ class _CheckoutViewState extends State<CheckoutView> {
         onTap: () async {
           final result = await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => EditProfileView(isFromCheckOut: true,))
+              MaterialPageRoute(builder: (context) => EditAddressView(isFromCheckOut: true,))
           );
 
           if(result) {

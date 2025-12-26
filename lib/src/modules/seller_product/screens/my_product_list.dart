@@ -10,7 +10,6 @@ import 'package:sneakerx/src/services/shop_service.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 
 class ShopProductList extends StatefulWidget {
-
   const ShopProductList({super.key});
 
   @override
@@ -24,10 +23,10 @@ class _ShopProductList extends State<ShopProductList> {
   @override
   void initState() {
     super.initState();
-    _loadData(); // Call the helper method
+    _loadData();
   }
 
-  // Helper to load/reload data
+  // REFRESH LOGIC: Simply re-assigning the Future triggers the FutureBuilder
   void _loadData() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     setState(() {
@@ -45,9 +44,7 @@ class _ShopProductList extends State<ShopProductList> {
         content: Text(message),
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         backgroundColor: Colors.grey[800],
       ),
     );
@@ -60,34 +57,26 @@ class _ShopProductList extends State<ShopProductList> {
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 1,
-
         leading: IconButtonWidget(
           icon: Icons.home,
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MainScreen()
-              )
+            Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const MainScreen()),
+                    (route) => false
             );
           },
         ),
-        title:
-        Text(
-          'Sản phẩm của tôi',
+        title: Text(
+          'Sản phẩm của tôi',
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w500,
             letterSpacing: -1,
           ),
         ),
-        actions: [
-          IconButtonWidget(
-            icon: Icons.help_outline,
-            onPressed: () => _showMessage('Help clicked'),
-          ),
-        ],
       ),
+      // Use FutureBuilder directly. No need for manual _isLoading flag.
       body: FutureBuilder<Shop?>(
         future: _shopsFuture,
         builder: (context, snapshot) {
@@ -96,72 +85,56 @@ class _ShopProductList extends State<ShopProductList> {
           } else if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           } else if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(child: Text("Product not found"));
+            return const Center(child: Text("Shop not found"));
           }
 
-          final items = snapshot.data!.products;
+          // Safe access to products
+          final items = snapshot.data?.products ?? [];
 
-          return items.isNotEmpty
-              ? SafeArea(
-                child: ListView.builder(
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final product = items[index];
-
-                    return ProductCard(product: product, onRefresh: _loadData,);
-                  },
-                )
-              )
-              : SafeArea(
-            child: Column(
-              children: [
-                // 1. Icon & Thông báo trống
-                Container(
-                  height: 300,
-                  width: double.infinity,
-                  color: const Color(0xFFF5F5F5),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 100, height: 100,
-                        decoration: const BoxDecoration(
-                            image: DecorationImage(
-                              image: AssetImage("assets/images/empty_order.png"),
-                              // Nếu chưa có ảnh, dùng Icon thay thế:
-                              // icon: Icon(Icons.assignment_outlined, size: 60, color: Colors.grey[300]),
-                            )
-                        ),
-                        child: Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey[300]), // Icon thay thế
-                      ),
-                      const SizedBox(height: 20),
-                      Text("Bạn chưa có sản phẩm nào cả", style: TextStyle(color: Colors.black54, fontSize: 16)),
-                    ],
-                  ),
+          if (items.isEmpty) {
+            return SafeArea(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey[300]),
+                    const SizedBox(height: 20),
+                    const Text("Bạn chưa có sản phẩm nào cả", style: TextStyle(color: Colors.black54, fontSize: 16)),
+                  ],
                 ),
-              ],
+              ),
+            );
+          }
+
+          return SafeArea(
+            child: ListView.builder(
+              padding: const EdgeInsets.only(bottom: 80), // Space for FAB
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                return ProductCard(
+                  product: items[index],
+                  onRefresh: _loadData, // Pass refresh callback for delete/edit actions
+                );
+              },
             ),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xff464646),
+        child: const Icon(Icons.add, color: Color(0xff86f4b5), size: 35),
         onPressed: () async {
-          // Wait for "Add Screen" to return
+          // 1. Wait for Add Screen result
           final result = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => AddProductScreen())
+            context,
+            MaterialPageRoute(builder: (context) => const AddProductScreen()),
           );
 
-          // If added successfully, refresh the list
+          // 2. Refresh only if result is true
           if (result == true) {
             _loadData();
           }
         },
-        backgroundColor: Color(0xff464646),
-        child: Icon(Icons.add,
-        color: Color(0xff86f4b5),
-          size: 35,
-        ), // icon inside the button
       ),
     );
   }

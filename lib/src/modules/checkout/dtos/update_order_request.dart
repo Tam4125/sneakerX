@@ -11,7 +11,7 @@ class UpdateOrderStatusRequest {
 
   Map<String, dynamic> toJson() {
     return {
-      'orderStatus': orderStatus.toString(),
+      'orderStatus': orderStatus.name,
       'orderId': orderId
     };
   }

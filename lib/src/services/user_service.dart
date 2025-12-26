@@ -1,10 +1,12 @@
 import 'dart:convert';
 
 import 'package:sneakerx/src/models/order.dart';
+import 'package:sneakerx/src/models/user.dart';
 import 'package:sneakerx/src/models/user_address.dart';
 import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_response.dart';
 import 'package:sneakerx/src/modules/profile/dtos/create_user_address_request.dart';
 import 'package:sneakerx/src/modules/profile/dtos/update_address_request.dart';
+import 'package:sneakerx/src/modules/profile/dtos/update_user_request.dart';
 import 'package:sneakerx/src/utils/api_client.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
 
@@ -139,5 +141,68 @@ class UserService {
       throw Exception("Error update user address: $e");
     }
   }
+
+  Future<User?> getUserDetail() async {
+    String url = "$baseUrl/me/detail";
+    try {
+      final response = await ApiClient.get(url);
+      Map<String, dynamic> jsonMap = jsonDecode(response.body);
+
+      if(response.statusCode == 200 || response.statusCode == 201) {
+        final apiResponse = ApiResponse<User>.fromJson(
+            jsonMap,
+                (data) => User.fromJson(data as Map<String, dynamic>)
+        );
+
+        return apiResponse.data;
+
+      } else {
+        final errorMap = jsonDecode(response.body);
+        throw Exception(errorMap['message'] ?? "Error update user");
+      }
+    } catch (e) {
+      throw Exception("Get user detail failed: $e");
+    }
+  }
+
+  Future<User?> updateUserDetail(UpdateUserRequest request) async {
+    final url = "$baseUrl/${request.userId}";
+    // 1. Prepare Fields Map
+    Map<String, String> fields = {
+      'userId': request.userId.toString(),
+      'username': request.username,
+      'fullName': request.fullName,
+      'email': request.email,
+      'phone': request.phone,
+      'status': request.status.name,
+    };
+
+    try {
+      final response = await ApiClient.putMultipartOneImage(
+          url: url,
+          fields: fields,
+          file: request.avatar,
+          fileField: "avatar"
+      );
+
+      Map<String, dynamic> jsonMap = jsonDecode(response.body);
+
+      if(response.statusCode == 200 || response.statusCode == 201) {
+        final apiResponse = ApiResponse<User>.fromJson(
+            jsonMap,
+                (data) => User.fromJson(data as Map<String, dynamic>)
+        );
+
+        return apiResponse.data;
+
+      } else {
+        final errorMap = jsonDecode(response.body);
+        throw Exception(errorMap['message'] ?? "Error update user");
+      }
+    } catch (e) {
+      throw Exception("Update user service error: $e");
+    }
+  }
+
 
 }

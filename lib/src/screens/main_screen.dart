@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sneakerx/src/modules/cart/view/cart_view.dart';
 import 'package:sneakerx/src/modules/homepage/screens/home_screen.dart';
 import 'package:sneakerx/src/modules/profile/view/profile_view.dart';
+import 'package:sneakerx/src/modules/search/screen/search_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final int initialIndex;
@@ -18,8 +19,7 @@ class _mainScreenState extends State<MainScreen> {
   // 1. Define the list of screens for each tab
   final List<Widget> _pages = [
     const HomeScreen(),
-    const Center(child: Text("Search Screen")), // Index 1: Placeholder
-    const Center(child: Text("Notifications")), // Index 2: Placeholder
+    const SearchScreen(), // Index 1: Placeholder
     const CartView(),   // Index 3: Placeholder
     const ProfileView(),// Index 4: Placeholder
   ];
@@ -64,10 +64,6 @@ class _mainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.search),
             label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notification_add_outlined),
-            label: 'Notification',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_cart_outlined),

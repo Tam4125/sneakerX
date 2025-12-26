@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:sneakerx/src/modules/seller_dashboard/widgets/icon_button_widget.dart';
+import 'package:sneakerx/src/modules/seller_info/screens/edit_seller_infor.dart';
 import 'package:sneakerx/src/modules/seller_info/widgets/infofield.dart';
 import 'package:sneakerx/src/modules/seller_info/widgets/number_format.dart';
 import 'package:sneakerx/src/screens/main_screen.dart';
@@ -123,7 +124,18 @@ class _SellerInfo extends State<SellerInfo> {
         ),
         actions: [
           IconButtonWidget(
-              onPressed: () => _showMessage('Sửa thông tin của Shop'),
+              onPressed: () async {
+                // Wait for edit screen to return 'true'
+                final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const EditShopInfoScreen())
+                );
+
+                // If returned true, reload data to show changes
+                if (result == true) {
+                  _initializeData();
+                }
+              },
               icon: Icons.edit)
         ],
       ),

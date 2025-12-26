@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 import 'package:sneakerx/src/modules/cart/view/cart_view.dart';
+import 'package:sneakerx/src/modules/search/screen/search_screen.dart';
 import 'package:sneakerx/src/modules/seller_dashboard/screens/seller_ui.dart';
 import 'package:sneakerx/src/modules/seller_dashboard/widgets/dashboard_card.dart';
 import 'package:sneakerx/src/modules/seller_signup/screens/seller_signup.dart';
@@ -11,7 +12,7 @@ import 'src/modules/product_detail/view/product_detail_view.dart';
 import 'package:sneakerx/src/modules/cart/view/empty_cart_view.dart';
 import 'package:sneakerx/src/modules/profile/view/empty_profile_view.dart';
 import 'package:sneakerx/src/modules/profile/view/settings_view.dart';
-import 'package:sneakerx/src/modules/profile/view/edit_profile_view.dart';
+import 'package:sneakerx/src/modules/profile/view/edit_address_view.dart';
 import 'package:sneakerx/src/modules/profile/view/order_history_view.dart';
 void main() async {
 

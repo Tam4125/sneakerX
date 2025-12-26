@@ -41,7 +41,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         return null;
       }
 
-      final orders = await _shopService.gettShopOrders(auth.shopId!);
+      final orders = await _shopService.getShopOrders(auth.shopId!);
       if (orders == null) {
         _showMessage("Get shop orders failed");
         return null;
@@ -234,7 +234,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         _buildStatCard("Chờ xác nhận", pending.toString(), Icons.hourglass_empty, Colors.orange),
         _buildStatCard("Đơn hủy", cancelled.toString(), Icons.cancel_outlined, Colors.red),
         // If you don't track returns, you can change this to "Hoàn thành" or other stat
-        _buildStatCard("Trả hàng", returned.toString(), Icons.assignment_return_outlined, Colors.purple),
+        _buildStatCard("Đã Giao", returned.toString(), Icons.assignment_return_outlined, Colors.purple),
         _buildStatCard("Người theo dõi", followers.toString(), Icons.person_add_alt, const Color(0xFF86F4B5)),
       ],
     );

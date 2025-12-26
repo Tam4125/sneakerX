@@ -67,7 +67,7 @@ class _SellerSignup extends State<SellerSignup> {
     try {
       // 2. Call Service
       final request = CreateShopRequest(
-          shopLogo: _shopLogo, // Can be null (backend handles default)
+          shopLogo: _shopLogo,
           shopDescription: _shopDescription.text,
           shopName: _shopName.text
       );

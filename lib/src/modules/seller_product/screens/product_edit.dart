@@ -228,8 +228,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
       final apiResponse = await _shopService.updateProduct(widget.product.productId, request);
 
       if (mounted) {
-        _showMessage('Thêm sản phẩm thành công!');
-        Navigator.pop(context);
+        _showMessage('Sửa sản phẩm #${widget.product.productId} thành công!');
+        Navigator.pop(context, true);
       }
     } catch (e) {
       _showMessage(e.toString().replaceAll("Exception: ", ""));
@@ -251,7 +251,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
         leading: const BackButton(color: Colors.black),
         actions: [
           if (_isLoading)
-            const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
+            const Center(child: CircularProgressIndicator(color: Colors.black,))
           else
             IconButton(icon: const Icon(Icons.check, color: Colors.blue), onPressed: _updateProduct),
         ],

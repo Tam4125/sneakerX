@@ -81,7 +81,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Success: ${result.message}"),
+          content: Text("Tạo tài khoản thành công, vui lòng kiểm tra email để xác thực tài khoản"),
           backgroundColor: Colors.green,
         ),
       );

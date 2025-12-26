@@ -75,8 +75,6 @@ class _CartViewState extends State<CartView> {
   Widget build(BuildContext context) {
 
     final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.currentUser;
-
 
     return authProvider.isGuest
         ? EmptyCartView()

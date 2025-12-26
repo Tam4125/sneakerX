@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sneakerx/src/models/product.dart';
+import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/services/product_service.dart';
 import '../widgets/custom_search_bar.dart';
 import '../widgets/banner_card.dart';
@@ -45,7 +46,15 @@ class _HomeScreenState extends State<HomeScreen> {
         toolbarHeight: 60,
         automaticallyImplyLeading: false,
         flexibleSpace: SafeArea(
-          child: CustomSearchBar(),
+          child: CustomSearchBar(
+            readOnly: true,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MainScreen(initialIndex: 1,))
+              );
+            },
+          ),
         ),
       ),
       body: SafeArea(

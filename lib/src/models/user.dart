@@ -1,3 +1,5 @@
+import 'package:sneakerx/src/models/enums/user_status.dart';
+
 class User {
   final int userId;
   final String username;
@@ -6,7 +8,7 @@ class User {
   final String phone;
   final String role;
   final String avatarUrl;
-  final String status;
+  final UserStatus status;
   final DateTime createdAt;
 
   User({
@@ -30,7 +32,7 @@ class User {
       phone: json['phone'] ?? "",
       role: json['role'] ?? "BUYER",
       avatarUrl: json['avatarUrl'] ?? "",
-      status: json['status'] ?? "",
+      status: UserStatus.values.byName(json['status'] ?? "ACTIVE"),
       createdAt: DateTime.parse(json['createdAt']),
     );
   }

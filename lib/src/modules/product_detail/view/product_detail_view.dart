@@ -63,7 +63,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => MainScreen(initialIndex: 3,)
+                    builder: (context) => MainScreen(initialIndex: 2,)
                   )
                 );
               },

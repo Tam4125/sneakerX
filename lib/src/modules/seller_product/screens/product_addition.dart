@@ -156,7 +156,7 @@ class _AddProductScreen extends State<AddProductScreen> {
 
       if (mounted) {
         _showMessage('Thêm sản phẩm thành công!');
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       _showMessage(e.toString().replaceAll("Exception: ", ""));
@@ -178,7 +178,7 @@ class _AddProductScreen extends State<AddProductScreen> {
         leading: const BackButton(color: Colors.black),
         actions: [
           if (_isLoading)
-            const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(color: Colors.black,)))
+            const Center(child: CircularProgressIndicator(color: Colors.black,))
           else
             IconButton(icon: const Icon(Icons.check, color: Colors.blue), onPressed: _saveProduct),
         ],

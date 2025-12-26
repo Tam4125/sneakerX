@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:sneakerx/src/models/cart.dart';
+import 'package:provider/provider.dart';
 import 'package:sneakerx/src/models/product.dart';
 import 'package:sneakerx/src/modules/cart/dtos/save_to_cart_request.dart';
-import 'package:sneakerx/src/modules/cart/view/cart_view.dart';
 import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/services/cart_service.dart';
+import 'package:sneakerx/src/utils/auth_provider.dart';
 import '../../../config/app_config.dart';
 
 class AddToCartSheet extends StatefulWidget {
@@ -49,10 +49,10 @@ class _AddToCartSheetState extends State<AddToCartSheet> {
       int colorId = widget.product.variants.where((map) => map.variantValue.toString() == _selectedColor && map.variantType == "COLOR").first.variantId;
 
       SaveToCartRequest request = SaveToCartRequest(
-        sizeId: sizeId,
-        colorId: colorId,
-        quantity: _quantity,
-        productId: widget.product.productId
+          sizeId: sizeId,
+          colorId: colorId,
+          quantity: _quantity,
+          productId: widget.product.productId
       );
 
       await _cartService.saveToCart(request);
@@ -221,34 +221,38 @@ class _AddToCartSheetState extends State<AddToCartSheet> {
               ),
 
               onPressed: () async {
-                setState(() {
-                  _isLoading = true;
-                });
-
-                final result = await _handleBtn();
-
-                setState(() {
-                  _isLoading = false;
-                });
-
-                Navigator.pop(context); // Đóng popup trước
-
-                if (result) {
-                  if (widget.isBuyNow) {
-                    // === TRƯỜNG HỢP MUA NGAY: CHUYỂN SANG GIỎ HÀNG ===
-                    Navigator.push(
+                final auth = Provider.of<AuthProvider>(context, listen: false);
+                if(auth.isGuest) {
+                  Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => MainScreen(initialIndex: 3,),
-                      ),
-                    );
-                  } else {
-                    // === TRƯỜNG HỢP THÊM VÀO GIỎ: HIỆN THÔNG BÁO ===
-                    _showMessage(
-                        "Đã thêm: $_selectedColor - Size $_selectedSize (x$_quantity)");
-                  }
+                      MaterialPageRoute(builder: (context) => MainScreen(initialIndex: 2,))
+                  );
                 } else {
-                  _showMessage("Error save to cart");
+                  setState(() => _isLoading = true);
+
+                  final result = await _handleBtn();
+
+                  setState(() => _isLoading = false);
+
+                  Navigator.pop(context); // Đóng popup trước
+
+                  if (result) {
+                    if (widget.isBuyNow) {
+                      // === TRƯỜNG HỢP MUA NGAY: CHUYỂN SANG GIỎ HÀNG ===
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MainScreen(initialIndex: 2,),
+                        ),
+                      );
+                    } else {
+                      // === TRƯỜNG HỢP THÊM VÀO GIỎ: HIỆN THÔNG BÁO ===
+                      _showMessage(
+                          "Đã thêm: ${AppConfig.getColorName(_selectedColor)} - Size $_selectedSize (x$_quantity)");
+                    }
+                  } else {
+                    _showMessage("Error save to cart");
+                  }
                 }
               },
               child: _isLoading

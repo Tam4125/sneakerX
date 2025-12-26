@@ -13,7 +13,6 @@ class SellerEdit extends StatefulWidget {
 }
 
 class _SellerEdit extends State<SellerEdit> {
-  String _activeTab = 'products';
   File? _image;
   late final TextEditingController _shopNameController;
   late final TextEditingController _shopDescriptionController;

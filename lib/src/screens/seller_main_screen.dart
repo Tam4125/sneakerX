@@ -19,7 +19,7 @@ class _MainSellerScreenState extends State<SellerMainScreen> {
   final List<Widget> _pages = [
     const SellerDashboardScreen(),
     const ShopProductList(), // Index 1: Placeholder
-    const SellerOrders(),
+    const SellerOrdersScreen(),
     const SellerInfo(),
   ];
 

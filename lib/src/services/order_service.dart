@@ -98,8 +98,6 @@ class OrderService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
 
-        print("ORDER DETAIL ??? ${response.body}");
-
         Map<String, dynamic> jsonMap = jsonDecode(response.body);
 
 
