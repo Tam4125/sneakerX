@@ -1,20 +1,19 @@
 package com.example.sneakerx.services;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class EmailService {
 
     @Value("${app.base-url}")
     private String baseUrl;
 
     private final JavaMailSender mailSender;
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
 
     public void sendVerificationEmail(String to, String token) {
 

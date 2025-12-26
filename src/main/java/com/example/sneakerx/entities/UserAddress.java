@@ -1,11 +1,8 @@
 package com.example.sneakerx.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Data
 @AllArgsConstructor
@@ -13,14 +10,21 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "user_addresses")
 public class UserAddress {
-
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer addressId;
-    private Integer userId;
+
     private String recipientName;
     private String phone;
     private String provinceOrCity;
     private String district;
     private String ward;
     private String addressLine;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonIgnore // <--- THE FIX: Stops Jackson from serializing the Cart back to the parent
+    @ToString.Exclude // <--- Stop Lombok from printing it
+    @EqualsAndHashCode.Exclude
+    private User user;
 }

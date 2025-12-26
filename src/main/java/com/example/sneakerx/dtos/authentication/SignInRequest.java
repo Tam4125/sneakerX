@@ -1,4 +1,4 @@
-package com.example.sneakerx.dtos;
+package com.example.sneakerx.dtos.authentication;
 
 
 import lombok.AllArgsConstructor;

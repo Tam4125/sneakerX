@@ -1,11 +1,9 @@
 package com.example.sneakerx.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -18,9 +16,24 @@ import java.time.LocalDateTime;
 public class ShopFollower {
 
     @Id
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer followerId;
 
-    private String shopId;
-    private String userId;
+    @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime followedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shop_id")
+    @JsonIgnore // <--- THE FIX: Stops Jackson from serializing the Cart back to the parent
+    @ToString.Exclude // <--- Stop Lombok from printing it
+    @EqualsAndHashCode.Exclude
+    private Shop shop;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonIgnore // <--- THE FIX: Stops Jackson from serializing the Cart back to the parent
+    @ToString.Exclude // <--- Stop Lombok from printing it
+    @EqualsAndHashCode.Exclude
+    private User user;
 }

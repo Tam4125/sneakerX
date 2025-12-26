@@ -4,5 +4,6 @@ public enum PaymentProvider {
     MOMO,
     ZALOPAY,
     VNPAY,
+    STRIPE,
     COD
 }

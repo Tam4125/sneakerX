@@ -1,10 +1,10 @@
 package com.example.sneakerx.entities;
 
 import com.example.sneakerx.entities.enums.PaymentType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -17,9 +17,8 @@ import java.time.LocalDateTime;
 public class UserPaymentMethod {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer paymentId;
-
-    private Integer userId;
 
     @Enumerated(EnumType.STRING)
     private PaymentType type;
@@ -27,6 +26,15 @@ public class UserPaymentMethod {
     private String provider;
     private String accountNumberMask;
     private Boolean isDefault;
+
+    @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonIgnore // <--- Stops Jackson from serializing the Cart back to the parent
+    @ToString.Exclude // <--- Stop Lombok from printing it
+    @EqualsAndHashCode.Exclude  // <--- ADD THIS to prevent StackOverflowError
+    private User user;
 
 }

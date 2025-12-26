@@ -1,4 +1,4 @@
-package com.example.sneakerx.dtos;
+package com.example.sneakerx.dtos.authentication;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,4 +12,5 @@ public class SignUpRequest {
     private String email;
     private String phone;
     private String password;
+    private String avatarUrl;
 }
