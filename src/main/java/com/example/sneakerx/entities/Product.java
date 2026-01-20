@@ -1,6 +1,5 @@
 package com.example.sneakerx.entities;
 
-import com.example.sneakerx.entities.enums.ProductStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,29 +18,6 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer productId;
-    private String name;
-    private String description;
-    private Integer soldCount;
-    private Double rating;
-
-    @Enumerated(EnumType.STRING)
-    private ProductStatus status;
-
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProductImage> images;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProductVariant> variants;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProductReview> reviews;
 
     @ManyToOne
     @JoinColumn(name = "shop_id")
@@ -56,4 +32,29 @@ public class Product {
     @ToString.Exclude // <--- Stop Lombok from printing it
     @EqualsAndHashCode.Exclude
     private Category category;
+
+    private String name;
+    private String description;
+    private Double basePrice;
+    private Integer soldCount;
+    private Double rating;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductImage> images;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductSku> skus;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductReview> reviews;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductAttribute> attributes;
 }

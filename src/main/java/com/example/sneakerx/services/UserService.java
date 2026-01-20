@@ -11,14 +11,13 @@ import com.example.sneakerx.mappers.OrderMapper;
 import com.example.sneakerx.mappers.UserAddressMapper;
 import com.example.sneakerx.mappers.UserMapper;
 import com.example.sneakerx.repositories.OrderRepository;
-import com.example.sneakerx.repositories.RefreshTokenRepository;
+import com.example.sneakerx.repositories.ShopOrderRepository;
 import com.example.sneakerx.repositories.UserAddressesRepository;
 import com.example.sneakerx.repositories.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 
@@ -26,24 +25,58 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
 
+    //Repository
     private final UserRepository userRepository;
     private final UserAddressesRepository userAddressesRepository;
-    private final UserAddressMapper userAddressMapper;
-    private final OrderMapper orderMapper;
+    private final ShopOrderRepository shopOrderRepository;
     private final OrderRepository orderRepository;
-    private final CloudinaryService cloudinaryService;
+
+
+    // Utils
+    private final OrderMapper orderMapper;
+    private final UserAddressMapper userAddressMapper;
     private final UserMapper userMapper;
 
+    public UserDto getCurrentUser(User user) {
+        return userMapper.toUserDto(user);
+    }
+
+    public UserDto updateUserDetail(UpdateUserRequest request, User user) {
+        User userToUpdate = userRepository.findByUserId(user.getUserId())
+                        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        userToUpdate.setUsername(request.getUsername());
+        userToUpdate.setFullName(request.getFullName());
+        userToUpdate.setEmail(request.getEmail());
+        userToUpdate.setPhone(request.getPhone());
+        userToUpdate.setStatus(UserStatus.valueOf(request.getStatus()));
+
+        // 2. CHECK: Is the logo null or empty?
+        if (request.getAvatarUrl() != null && !request.getAvatarUrl().isEmpty()) {
+            userToUpdate.setAvatarUrl(request.getAvatarUrl());
+        }
+        User savedUser = userRepository.save(userToUpdate);
+
+        return userMapper.toUserDto(savedUser);
+    }
 
     public List<UserAddressDto> getCurrentUserAddresses (User user) {
         List<UserAddress> userAddresses = userAddressesRepository.findAllByUser(user);
 
         return userAddresses.stream().map(
-                userAddressMapper::mapToUserAddressDto
+                userAddressMapper::toUserAddressDto
         ).toList();
     }
-
+    @Transactional
     public UserAddressDto createUserAddress(CreateAddressRequest request, User user) {
+        if (Boolean.TRUE.equals(request.getIsDefault())) {
+            userAddressesRepository.findByUserAndIsDefaultTrue(user)
+                    .ifPresent(existingDefault -> {
+                        existingDefault.setIsDefault(false);
+                        userAddressesRepository.save(existingDefault);
+                    });
+        }
+
+
         UserAddress userAddress = new UserAddress();
 
         userAddress.setRecipientName(request.getRecipientName());
@@ -53,13 +86,24 @@ public class UserService {
         userAddress.setWard(request.getWard());
         userAddress.setAddressLine(request.getAddressLine());
         userAddress.setUser(user);
+        userAddress.setIsDefault(request.getIsDefault());
+
+
 
         userAddressesRepository.save(userAddress);
 
-        return userAddressMapper.mapToUserAddressDto(userAddress);
+        return userAddressMapper.toUserAddressDto(userAddress);
     }
-
+    @Transactional
     public UserAddressDto updateUserAddress(UpdateAddressRequest request, Integer addressId, User user) throws AccessDeniedException {
+        if (Boolean.TRUE.equals(request.getIsDefault())) {
+            userAddressesRepository.findByUserAndIsDefaultTrue(user)
+                    .ifPresent(existingDefault -> {
+                        existingDefault.setIsDefault(false);
+                        userAddressesRepository.save(existingDefault);
+                    });
+        }
+
         UserAddress userAddress = userAddressesRepository.findByAddressId(addressId)
                 .orElseThrow(() -> new ResourceNotFoundException("User address not found"));
 
@@ -73,51 +117,28 @@ public class UserService {
         userAddress.setDistrict(request.getDistrict());
         userAddress.setWard(request.getWard());
         userAddress.setAddressLine(request.getAddressLine());
+        userAddress.setIsDefault(request.getIsDefault());
 
         userAddressesRepository.save(userAddress);
 
-        return userAddressMapper.mapToUserAddressDto(userAddress);
+        return userAddressMapper.toUserAddressDto(userAddress);
     }
 
     public void deleteUserAddress(Integer addressId, User user) throws AccessDeniedException {
         UserAddress userAddress = userAddressesRepository.findByAddressId(addressId)
                 .orElseThrow(() -> new ResourceNotFoundException("User address not found"));
 
-        if(!userAddress.getUser().equals(user)) {
+        if(!userAddress.getUser().getUserId().equals(user.getUserId())) {
             throw new AccessDeniedException("Forbidden");
         }
         userAddressesRepository.delete(userAddress);
-
     }
 
-    @Transactional
-    public List<OrderDto> getAllOrders(User user) {
+    public List<OrderDto> getOrders(User user) {
         List<Order> orders = orderRepository.findAllByUser(user);
 
         return orders.stream().map(
-                orderMapper::mapToOderDto
+                orderMapper::toOrderDto
         ).toList();
-    }
-
-    public UserDto updateUserDetail(UpdateUserRequest request, User user) throws IOException {
-        if(!user.getUserId().equals(request.getUserId())) {
-            throw new AccessDeniedException("Forbidden");
-        }
-
-        user.setUsername(request.getUsername());
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-        user.setStatus(UserStatus.valueOf(request.getStatus()));
-
-        // 2. CHECK: Is the logo null or empty?
-        if (request.getAvatar() != null && !request.getAvatar().isEmpty()) {
-            // Upload provided image
-            String avatarUrl = cloudinaryService.uploadUser(request.getAvatar(),user.getUserId());
-            user.setAvatarUrl(avatarUrl);
-        }
-
-        User savedUser = userRepository.save(user);
-        return userMapper.mapToUserDto(savedUser);
     }
 }

@@ -14,4 +14,6 @@ public interface UserAddressesRepository extends JpaRepository<UserAddress, Inte
     List<UserAddress> findAllByUser(User user);
 
     Optional<UserAddress> findByAddressId(Integer addressId);
+
+    Optional<UserAddress> findByUserAndIsDefaultTrue(User user);
 }

@@ -51,9 +51,6 @@ public class User implements UserDetails {
     private List<UserAddress> userAddresses;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserPaymentMethod> userPaymentMethods;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Order> orders;
 
 

@@ -13,5 +13,5 @@ import org.springframework.web.multipart.MultipartFile;
 public class CreateShopRequest {
     private String shopName;
     private String shopDescription;
-    private MultipartFile shopLogo;
+    private String shopLogo;
 }

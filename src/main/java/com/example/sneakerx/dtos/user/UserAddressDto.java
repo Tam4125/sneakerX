@@ -11,11 +11,12 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UserAddressDto {
     private Integer addressId;
+    private Integer userId;
     private String recipientName;
     private String phone;
     private String provinceOrCity;
     private String district;
     private String ward;
     private String addressLine;
-    private Integer userId;
+    private Boolean isDefault;
 }

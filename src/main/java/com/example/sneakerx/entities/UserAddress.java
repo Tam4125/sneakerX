@@ -20,6 +20,7 @@ public class UserAddress {
     private String district;
     private String ward;
     private String addressLine;
+    private Boolean isDefault;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

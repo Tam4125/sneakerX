@@ -1,9 +1,6 @@
 package com.example.sneakerx.controllers;
 
-import com.example.sneakerx.dtos.order.CreateOrderRequest;
-import com.example.sneakerx.dtos.order.OrderDto;
-import com.example.sneakerx.dtos.order.UpdateOrderRequest;
-import com.example.sneakerx.dtos.order.UpdateOrderStatusRequest;
+import com.example.sneakerx.dtos.order.*;
 import com.example.sneakerx.entities.User;
 import com.example.sneakerx.services.OrderService;
 import com.example.sneakerx.utils.ApiResponse;
@@ -22,62 +19,62 @@ import java.nio.file.AccessDeniedException;
 public class OrderController {
     private final OrderService orderService;
 
-    @GetMapping("/{orderId}")
-    public ResponseEntity<ApiResponse<OrderDto>> getOrderDetail(
-            @AuthenticationPrincipal User user,
-            @PathVariable(name = "orderId") Integer orderId
-    ) {
-        OrderDto orderDto = orderService.getOrderDetail(orderId);
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Get order detail successfully", orderDto));
-    }
+//    @GetMapping("/{orderId}")
+//    public ResponseEntity<ApiResponse<OrderDto>> getOrderDetail(
+//            @AuthenticationPrincipal User user,
+//            @PathVariable(name = "orderId") Integer orderId
+//    ) {
+//        OrderDto orderDto = orderService.getOrderDetail(orderId);
+//        return ResponseEntity
+//                .status(HttpStatus.OK)
+//                .body(ApiResponse.ok("Get order detail successfully", orderDto));
+//    }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<OrderDto>> createOrder(
+    public ResponseEntity<ApiResponse<CreateOrderResponse>> createOrder(
             @AuthenticationPrincipal User user,
             @RequestBody CreateOrderRequest request
     ) throws BadRequestException {
-        OrderDto orderDto = orderService.createOrder(request, user);
+        CreateOrderResponse createOrderResponse = orderService.createOrder(request, user);
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Create order successfully", orderDto));
+                .body(ApiResponse.ok("Create order successfully", createOrderResponse));
     }
 
-    @PutMapping("/{orderId}")
-    public ResponseEntity<ApiResponse<OrderDto>> updateOrder(
-            @AuthenticationPrincipal User user,
-            @PathVariable(name = "orderId") Integer orderId,
-            @RequestBody UpdateOrderRequest request
-    ) {
-        OrderDto orderDto = orderService.updateOrder(request, orderId);
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Update order successfully", orderDto));
-    }
+//    @PutMapping("/{orderId}")
+//    public ResponseEntity<ApiResponse<OrderDto>> updateOrder(
+//            @AuthenticationPrincipal User user,
+//            @PathVariable(name = "orderId") Integer orderId,
+//            @RequestBody UpdateOrderRequest request
+//    ) throws AccessDeniedException {
+//        OrderDto orderDto = orderService.updateOrder(request, orderId);
+//        return ResponseEntity
+//                .status(HttpStatus.OK)
+//                .body(ApiResponse.ok("Update order successfully", orderDto));
+//    }
 
-    @PutMapping("/{orderId}/status")
-    public ResponseEntity<ApiResponse<OrderDto>> updateOrderStatus(
-            @AuthenticationPrincipal User user,
-            @PathVariable(name = "orderId") Integer orderId,
-            @RequestBody UpdateOrderStatusRequest request
-    ) {
-        OrderDto orderDto = orderService.updateOrderStatus(request, orderId);
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Update order status successfully", orderDto));
-    }
-
-    @DeleteMapping("/{orderId}")
+    @DeleteMapping("/shop-orders/{shopOrderId}")
     public ResponseEntity<ApiResponse<String>> deleteOrder(
             @AuthenticationPrincipal User user,
-            @PathVariable(name = "orderId") Integer orderId
+            @PathVariable(name = "shopOrderId") Integer shopOrderId
     ) throws AccessDeniedException {
-        orderService.deleteOrder(orderId, user);
+        orderService.deleteShopOrder(shopOrderId, user);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Update order status successfully", "Delete Order: " + orderId));
+                .body(ApiResponse.ok("Delete order successfully", "Delete Order: " + shopOrderId));
+    }
+
+    @PutMapping("/shop-orders/{shopOrderId}")
+    public ResponseEntity<ApiResponse<ShopOrderDto>> updateShopOrder(
+            @AuthenticationPrincipal User user,
+            @PathVariable(name = "shopOrderId") Integer shopOrderId,
+            @RequestBody UpdateShopOrderRequest request
+    ) throws AccessDeniedException {
+        ShopOrderDto shopOrder = orderService.updateShopOrder(request, shopOrderId);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.ok("Update shop order successfully", shopOrder));
     }
 
 }

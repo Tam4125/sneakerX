@@ -1,11 +1,15 @@
 package com.example.sneakerx.entities;
 
+import com.example.sneakerx.entities.customClasses.AddressSnapshot;
 import com.example.sneakerx.entities.enums.OrderStatus;
+import com.example.sneakerx.entities.enums.PaymentStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,23 +26,22 @@ public class Order {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    @JsonIgnore // <--- THE FIX: Stops Jackson from serializing the Cart back to the parent
-    @ToString.Exclude // <--- Stop Lombok from printing it
+    @JsonIgnore
+    @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "address_id")
-    @JsonIgnore // <--- THE FIX: Stops Jackson from serializing the Cart back to the parent
-    @ToString.Exclude // <--- Stop Lombok from printing it
-    @EqualsAndHashCode.Exclude
-    private UserAddress userAddress;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Payment> payments;
 
-    private Double totalPrice;
-    private Double shippingFee;
+    @JdbcTypeCode(SqlTypes.JSON) // <--- Tells Hibernate this is a JSON column
+    @Column(name = "shipping_address", columnDefinition = "json")
+    private AddressSnapshot shippingAddress;
+
+    private Double totalAmount;
 
     @Enumerated(EnumType.STRING)
-    private OrderStatus orderStatus;
+    private PaymentStatus paymentStatus;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -48,9 +51,5 @@ public class Order {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> orderItems;
-
-    @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Payment payment;
-
+    private List<ShopOrder> shopOrders;
 }

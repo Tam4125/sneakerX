@@ -4,10 +4,7 @@ import com.example.sneakerx.dtos.authentication.RefreshTokenRequest;
 import com.example.sneakerx.dtos.authentication.SignInRequest;
 import com.example.sneakerx.dtos.authentication.SignInResponse;
 import com.example.sneakerx.dtos.authentication.SignUpRequest;
-import com.example.sneakerx.dtos.user.CurrentUserResponse;
-import com.example.sneakerx.entities.User;
-import com.example.sneakerx.repositories.EmailVerificationTokenRepository;
-import com.example.sneakerx.repositories.UserRepository;
+import com.example.sneakerx.dtos.user.UserDto;
 import com.example.sneakerx.services.AuthService;
 import com.example.sneakerx.utils.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -22,14 +19,14 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/sign-up")
-    public ResponseEntity<ApiResponse<String>> signUp(
+    public ResponseEntity<ApiResponse<UserDto>> signUp(
             @RequestBody SignUpRequest request
     ) throws Exception {
-        User user = authService.signUp(request);
+        UserDto userDto = authService.signUp(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Account created successfully", "Sign up successfully"));
+                .body(ApiResponse.ok("Account created successfully", userDto));
     }
 
     @PostMapping("/sign-in")
@@ -43,10 +40,10 @@ public class AuthController {
     }
 
     @GetMapping("/verify")
-    public ResponseEntity<ApiResponse<User>> verifyAccount(
+    public ResponseEntity<ApiResponse<UserDto>> verifyAccount(
             @RequestParam("token") String token
     ) throws Exception {
-        User user = authService.verifyAccount(token);
+        UserDto user = authService.verifyAccount(token);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(ApiResponse.ok("Verified successfully", user));

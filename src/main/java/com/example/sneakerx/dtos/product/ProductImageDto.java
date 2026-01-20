@@ -1,4 +1,4 @@
-package com.example.sneakerx.dtos.order;
+package com.example.sneakerx.dtos.product;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UpdateOrderStatusRequest {
-    private Integer orderId;
-    private String orderStatus;
+public class ProductImageDto {
+    private Integer imageId;
+    private Integer productId;
+    private String imageUrl;
 }

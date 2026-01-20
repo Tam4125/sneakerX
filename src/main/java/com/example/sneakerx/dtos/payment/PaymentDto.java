@@ -2,6 +2,8 @@ package com.example.sneakerx.dtos.payment;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -11,7 +13,8 @@ public class PaymentDto {
     private Integer orderId;
     private Integer userId;
     private Double amount;
-    private String provider;
+    private String paymentMethod;
     private String paymentStatus;
     private String transactionId;
+    private LocalDateTime createdAt;
 }

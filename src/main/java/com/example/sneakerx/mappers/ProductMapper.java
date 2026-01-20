@@ -1,53 +1,46 @@
 package com.example.sneakerx.mappers;
 
-import com.example.sneakerx.dtos.product.ProductDetailResponse;
-import com.example.sneakerx.dtos.product.ProductImageResponse;
-import com.example.sneakerx.dtos.product.ProductReviewResponse;
-import com.example.sneakerx.dtos.product.ProductVariantResponse;
-import com.example.sneakerx.entities.Product;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import com.example.sneakerx.dtos.product.*;
+        import com.example.sneakerx.entities.*;
+        import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Component
-@RequiredArgsConstructor
-public class ProductMapper {
-    public ProductDetailResponse mapToDetailResponse(Product product) {
-        ProductDetailResponse productDetailResponse = new ProductDetailResponse();
+@Mapper(
+        componentModel = "spring",
+        uses = {ShopMapper.class}
+)
+public interface ProductMapper {
 
-        productDetailResponse.setProductId(product.getProductId());
-        productDetailResponse.setShopId(product.getShop().getShopId());
-        productDetailResponse.setName(product.getName());
-        productDetailResponse.setDescription(product.getDescription());
-        productDetailResponse.setRating(product.getRating());
-        productDetailResponse.setStatus(product.getStatus().name());
-        productDetailResponse.setCategoryId(product.getCategory().getCategoryId());
-        productDetailResponse.setCreatedAt(product.getCreatedAt());
-        productDetailResponse.setSoldCount(product.getSoldCount());
-        productDetailResponse.setImages(
-                product.getImages().stream().map(img -> ProductImageResponse.builder()
-                        .imageId(img.getImageId())
-                        .imageUrl(img.getImageUrl())
-                        .build()).toList()
-        );
-        productDetailResponse.setVariants(
-                product.getVariants().stream().map(variant -> ProductVariantResponse.builder()
-                        .variantId(variant.getVariantId())
-                        .variantType(variant.getVariantType().name())
-                        .variantValue(variant.getVariantValue())
-                        .price(variant.getPrice())
-                        .stock(variant.getStock())
-                        .build()).toList()
-        );
-        if (product.getReviews() != null) {
-            productDetailResponse.setReviews(
-                    product.getReviews().stream().map(review -> ProductReviewResponse.builder()
-                            .reviewId(review.getReviewId())
-                            .comment(review.getComment())
-                            .rating(review.getRating())
-                            .userId(review.getUserId())
-                            .build()).toList()
-            );
-        }
-        return productDetailResponse;
-    }
+    @Mapping(source = ".", target = "product")
+    @Mapping(source = "shop", target = "shop")
+    @Mapping(source = "category", target = "category")
+    @Mapping(source = "attributes", target = "attributes")
+    @Mapping(source = "skus", target = "skus")
+    @Mapping(source = "reviews", target = "reviews")
+    ProductDetailResponse toDetailResponse(Product product);
+
+    // Product Entity -> DTO
+    @Mapping(source = "shop.shopId", target = "shopId")
+    @Mapping(source = "category.categoryId", target = "categoryId")
+    ProductDto toProductDto(Product product);
+
+    // Attribute Entity -> DTO
+    @Mapping(source = "product.productId", target = "productId")
+    ProductAttributeDto toAttributeDto(ProductAttribute attribute);
+
+    // Attribute Value Entity -> DTO
+    @Mapping(source = "attribute.attributeId", target = "attributeId")
+    AttributeValueDto toAttributeValueDto(AttributeValue value);
+
+    // SKU Entity -> DTO
+    @Mapping(source = "product.productId", target = "productId")
+    @Mapping(source = "values", target = "values")
+    ProductSkuDto toSkuDto(ProductSku sku);
+
+    @Mapping(source = "product.productId", target = "productId")
+    @Mapping(source = "user.userId", target = "userId")
+    ProductReviewDto toProductReviewDto(ProductReview productReview);
+
+    @Mapping(source = "product.productId", target = "productId")
+    ProductImageDto toProductImageDto(ProductImage productImage);
 }

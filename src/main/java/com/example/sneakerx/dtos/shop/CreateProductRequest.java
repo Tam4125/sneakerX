@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -16,8 +15,11 @@ public class CreateProductRequest {
     private String name;
     private String description;
     private Integer shopId;
-    private String status;
-    private Integer categoryId;
-    private List<CreateVariantRequest> variants;
+    private Integer categoryId; // If seller choose an existing category
+    private Double basePrice;
+
+    private List<String> imageUrls;
+    private List<CreateAttributeRequest> attributes;
+    private List<CreateSkuRequest> skus;
 
 }

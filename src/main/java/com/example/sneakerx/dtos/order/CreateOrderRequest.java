@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -13,10 +14,14 @@ import java.util.List;
 @Builder
 public class CreateOrderRequest {
     private Integer addressId;
-    private Double shippingFee;
-    private List<Integer> cartItems;
+    private Map<Integer, String> noteMap;  // {shopId: note}
 
-    private String provider;
+    private Map<Integer, List<Integer>> itemMap;    // {shopId: list of cartItemId}
+    private Map<Integer, Double> shippingFeeMap;    //{shopId: shipping fee}
+    private Map<Integer, Double> subTotalMap;   //{shopId: subTotal}
+    private Double totalAmount;
+
+    private String paymentMethod;
     private String transactionId;
-    private String orderStatus;
+    private String paymentStatus;
 }

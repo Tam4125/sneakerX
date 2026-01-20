@@ -10,8 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class SaveToCartRequest {
-    private Integer sizeId;
-    private Integer colorId;
     private Integer quantity;
-    private Integer productId;
+    private Integer skuId;
 }

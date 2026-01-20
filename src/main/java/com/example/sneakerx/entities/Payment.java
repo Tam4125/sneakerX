@@ -1,6 +1,6 @@
 package com.example.sneakerx.entities;
 
-import com.example.sneakerx.entities.enums.PaymentProvider;
+import com.example.sneakerx.entities.enums.PaymentMethod;
 import com.example.sneakerx.entities.enums.PaymentStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -20,8 +20,11 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer paymentId;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "order_id")
+    @JsonIgnore // <--- THE FIX: Stops Jackson from serializing the Cart back to the parent
+    @ToString.Exclude // <--- Stop Lombok from printing it
+    @EqualsAndHashCode.Exclude
     private Order order;
 
     @ManyToOne
@@ -34,7 +37,7 @@ public class Payment {
     private Double amount;
 
     @Enumerated(EnumType.STRING)
-    private PaymentProvider provider;
+    private PaymentMethod paymentMethod;
 
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;

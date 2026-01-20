@@ -15,9 +15,6 @@ public class ProductImage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer imageId;
 
-    private String imageUrl;
-    private Integer sortOrder;
-
     @ManyToOne
     @JoinColumn(name = "product_id")
     @JsonIgnore // <--- THE FIX: Stops Jackson from serializing the Cart back to the parent
@@ -25,4 +22,5 @@ public class ProductImage {
     @EqualsAndHashCode.Exclude
     private Product product;
 
+    private String imageUrl;
 }

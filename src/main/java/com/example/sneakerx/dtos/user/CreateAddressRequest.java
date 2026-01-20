@@ -16,4 +16,5 @@ public class CreateAddressRequest {
     private String district;
     private String ward;
     private String addressLine;
+    private Boolean isDefault;
 }

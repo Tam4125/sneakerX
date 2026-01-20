@@ -1,18 +1,21 @@
 package com.example.sneakerx.dtos.product;
 
-import com.example.sneakerx.entities.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProductReviewResponse {
+public class ProductReviewDto {
     private Integer reviewId;
+    private Integer productId;
+    private Integer userId;
     private Double rating;
     private String comment;
-    private Integer userId;
+    private LocalDateTime createdAt;
 }

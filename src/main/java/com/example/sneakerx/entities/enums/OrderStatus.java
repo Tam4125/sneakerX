@@ -2,9 +2,9 @@ package com.example.sneakerx.entities.enums;
 
 public enum OrderStatus {
     PENDING,
-    PAID,
+    CONFIRMED,
     SHIPPED,
     DELIVERED,
     CANCELLED,
-    REFUNDED
+    RETURNED
 }

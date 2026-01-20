@@ -10,8 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UpdateOrderRequest {
-    private Integer shopId;
-    private Integer addressId;
-    private Double totalPrice;
-    private Double shippingFee;
+    private Integer orderId;
+    private String paymentStatus;
 }

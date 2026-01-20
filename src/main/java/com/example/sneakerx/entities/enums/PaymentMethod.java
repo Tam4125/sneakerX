@@ -1,6 +1,8 @@
 package com.example.sneakerx.entities.enums;
 
-public enum PaymentProvider {
+public enum PaymentMethod {
+    BANKING,
+    CARD,
     MOMO,
     ZALOPAY,
     VNPAY,

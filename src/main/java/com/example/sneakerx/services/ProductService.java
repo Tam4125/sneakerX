@@ -1,17 +1,19 @@
 package com.example.sneakerx.services;
 
 import com.example.sneakerx.dtos.product.*;
-import com.example.sneakerx.entities.Product;
-import com.example.sneakerx.entities.ProductVariant;
-import com.example.sneakerx.entities.enums.ProductStatus;
+import com.example.sneakerx.entities.*;
+import com.example.sneakerx.exceptions.ResourceNotFoundException;
 import com.example.sneakerx.mappers.ProductMapper;
-import com.example.sneakerx.repositories.ProductRepository;
-import jakarta.persistence.criteria.Join;
+import com.example.sneakerx.repositories.*;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -20,12 +22,17 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ProductService {
+    // Repository
     private final ProductRepository productRepository;
+    private final ProductReviewRepository productReviewRepository;
+    private final ProductAttributeRepository productAttributeRepository;
+
+    // Utils
     private final ProductMapper productMapper;
 
-    public Page<ProductDetailResponse> search(ProductSearchRequest request, Pageable pageable) {
+    public Page<ProductDto> search(ProductSearchRequest request, Pageable pageable) {
         Specification<Product> spec = buildSpecification(request);
-        return productRepository.findAll(spec, pageable).map(productMapper::mapToDetailResponse);
+        return productRepository.findAll(spec, pageable).map(productMapper::toProductDto);
     }
 
     private Specification<Product> buildSpecification(ProductSearchRequest request) {
@@ -50,21 +57,17 @@ public class ProductService {
             // Price range
             if (request.getMinPrice() != null || request.getMaxPrice() != null) {
 
-                // 1. JOIN the 'variants' list
-                // "ProductVariant" should be the class name of the items in your list
-                Join<Product, ProductVariant> variantsJoin = root.join("variants");
-
                 // 2. Add Min Price Predicate
                 if (request.getMinPrice() != null) {
                     predicates.add(
-                            cb.greaterThanOrEqualTo(variantsJoin.get("price"), request.getMinPrice())
+                            cb.greaterThanOrEqualTo(root.get("basePrice"), request.getMinPrice())
                     );
                 }
 
                 // 3. Add Max Price Predicate
                 if (request.getMaxPrice() != null) {
                     predicates.add(
-                            cb.lessThanOrEqualTo(variantsJoin.get("price"), request.getMaxPrice())
+                            cb.lessThanOrEqualTo(root.get("basePrice"), request.getMaxPrice())
                     );
                 }
 
@@ -77,25 +80,60 @@ public class ProductService {
         };
     }
 
-    public ProductDetailResponse getProductDetail(Integer productId) throws Exception{
-        Product product = productRepository.findByProductId(productId)
-                .orElseThrow(() -> new Exception("Product not found with id: " + productId));
+    public Page<ProductDto> getPopularProducts(int page, int size) {
+        Pageable pageable = PageRequest.of(page,size, Sort.by("soldCount").descending());
 
-        if(product.getStatus() != ProductStatus.ACTIVE) {
-            throw new Exception("Product is unavailable");
+        Page<Product> productPage = productRepository.findAll(pageable);
+        return productPage.map(productMapper::toProductDto);
+    }
+
+    public Page<ProductDto> getFavouriteProducts(int page, int size) {
+        Pageable pageable = PageRequest.of(page,size, Sort.by("rating").descending());
+
+        Page<Product> productPage = productRepository.findAll(pageable);
+        return productPage.map(productMapper::toProductDto);
+    }
+
+    public Page<ProductAttributeDto> getPopularAttribute(int page, int size) {
+        Pageable pageable = PageRequest.of(page,size);
+
+        Page<ProductAttribute> productAttributePage = productAttributeRepository.findPopularAttributes(pageable);
+        return productAttributePage.map(productMapper::toAttributeDto);
+    }
+
+    public ProductDetailResponse getProductDetail(Integer productId) {
+        Product product = productRepository.findByProductId(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product id {" + productId + "} not found"));
+
+        return productMapper.toDetailResponse(product);
+    }
+    @Transactional
+    public List<ProductReviewDto> createReviews(CreateReviewRequest request, User user) {
+        if(!request.getUserId().equals(user.getUserId())) {
+            throw new AccessDeniedException("Forbidden");
         }
 
-        return productMapper.mapToDetailResponse(product);
-    }
+        List<Product> products = productRepository.findAllById(request.getProductIds());
 
-    public Page<ProductDetailResponse> getPopularProducts(Pageable pageable) {
-        Page<Product> products = productRepository.findByStatusOrderBySoldCountDesc(ProductStatus.ACTIVE, pageable);
-        return products.map(productMapper::mapToDetailResponse);
-    }
+        List<ProductReview> reviews = new ArrayList<>();
+        for(Product product : products) {
+            Double rating = request.getRatingMap().get(product.getProductId());
 
-    public Page<ProductDetailResponse> getFavouriteProducts(Pageable pageable) {
-        Page<Product> products = productRepository.findByStatusOrderByRatingDesc(ProductStatus.ACTIVE, pageable);
-        return products.map(productMapper::mapToDetailResponse);
+            List<ProductReview> currentReviews = product.getReviews();
+            product.setRating((product.getRating() * currentReviews.size() + rating)/(currentReviews.size() + 1));
+            productRepository.save(product);
+
+            ProductReview review = new ProductReview();
+            review.setProduct(product);
+            review.setUser(user);
+            review.setRating(request.getRatingMap().get(product.getProductId()));
+            review.setComment(request.getCommentMap().get(product.getProductId()));
+
+            reviews.add(review);
+        }
+
+        List<ProductReview> savedReviews = productReviewRepository.saveAll(reviews);
+        return savedReviews.stream().map(productMapper::toProductReviewDto).toList();
     }
 
 }

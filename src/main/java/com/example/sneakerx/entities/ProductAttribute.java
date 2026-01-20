@@ -1,27 +1,21 @@
 package com.example.sneakerx.entities;
 
-import com.example.sneakerx.entities.enums.VariantType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
-@Table(name = "product_variants")
 @Builder
-public class ProductVariant {
+@Entity
+@Table(name = "product_attributes")
+public class ProductAttribute {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer variantId;
-
-    @Enumerated(EnumType.STRING)
-    private VariantType variantType;
-
-    private String variantValue;
-    private Double price;
-    private Integer stock;
+    private Integer attributeId;
 
     @ManyToOne
     @JoinColumn(name = "product_id")
@@ -29,4 +23,9 @@ public class ProductVariant {
     @ToString.Exclude // <--- Stop Lombok from printing it
     @EqualsAndHashCode.Exclude
     private Product product;
+
+    private String name;
+
+    @OneToMany(mappedBy = "attribute", orphanRemoval = true, cascade = CascadeType.ALL)
+    private List<AttributeValue> values;
 }

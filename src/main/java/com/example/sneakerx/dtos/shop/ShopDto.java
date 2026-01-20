@@ -1,9 +1,8 @@
 package com.example.sneakerx.dtos.shop;
 
-import com.example.sneakerx.dtos.product.ProductDetailResponse;
-import com.example.sneakerx.entities.Shop;
-import com.example.sneakerx.entities.ShopFollower;
-import com.example.sneakerx.entities.User;
+import com.example.sneakerx.dtos.order.ShopOrderDto;
+import com.example.sneakerx.dtos.product.ProductDto;
+import com.example.sneakerx.entities.ShopOrder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,8 +24,4 @@ public class ShopDto {
     private Float rating;
     private Integer followersCount;
     private LocalDateTime createdAt;
-
-    private List<ShopFollowerDto> followers;
-    private List<ProductDetailResponse> products;
-
 }

@@ -19,6 +19,7 @@ public class Shop {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer shopId;
+
     private String shopName;
     private String shopDescription;
     private String shopLogo;
@@ -43,6 +44,6 @@ public class Shop {
     private List<Product> products;
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true)
-    private  List<OrderItem> orderItems;
+    private  List<ShopOrder> shopOrders;
 
 }

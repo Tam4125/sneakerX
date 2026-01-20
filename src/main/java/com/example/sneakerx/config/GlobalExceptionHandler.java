@@ -15,7 +15,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
         return ResponseEntity
                 .status(ex.getStatus())
-                .body(ApiResponse.error(ex.getMessage(), null));
+                .body(ApiResponse.error(ex.getMessage()));
     }
 
     // 2. Handle Resource Not Found (404)
@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(ResourceNotFoundException ex) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(ex.getMessage(), null));
+                .body(ApiResponse.error(ex.getMessage()));
     }
 
     // 3. Handle specific Java Exceptions (e.g., Invalid Arguments)
@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage(), null));
+                .body(ApiResponse.error(ex.getMessage()));
     }
 
     // 4. Fallback: Handle everything else (500 Internal Server Error)
@@ -41,6 +41,6 @@ public class GlobalExceptionHandler {
         // ideally, you would log the error here: log.error("Error: ", ex);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An unexpected error occurred: " + ex.getMessage(), null));
+                .body(ApiResponse.error("An unexpected error occurred: " + ex.getMessage()));
     }
 }

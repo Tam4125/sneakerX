@@ -1,155 +1,214 @@
 package com.example.sneakerx.services;
 
-import com.example.sneakerx.dtos.order.CreateOrderRequest;
-import com.example.sneakerx.dtos.order.OrderDto;
-import com.example.sneakerx.dtos.order.UpdateOrderRequest;
-import com.example.sneakerx.dtos.order.UpdateOrderStatusRequest;
+import com.example.sneakerx.dtos.order.*;
 import com.example.sneakerx.entities.*;
 import com.example.sneakerx.entities.enums.OrderStatus;
-import com.example.sneakerx.entities.enums.PaymentProvider;
+import com.example.sneakerx.entities.enums.PaymentMethod;
 import com.example.sneakerx.entities.enums.PaymentStatus;
 import com.example.sneakerx.exceptions.ResourceNotFoundException;
 import com.example.sneakerx.mappers.OrderMapper;
-import com.example.sneakerx.repositories.CartItemRepository;
-import com.example.sneakerx.repositories.OrderRepository;
-import com.example.sneakerx.repositories.ShopRepository;
-import com.example.sneakerx.repositories.UserAddressesRepository;
+import com.example.sneakerx.mappers.UserAddressMapper;
+import com.example.sneakerx.repositories.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class OrderService {
-
+    // Repository
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
-    private final ShopRepository shopRepository;
     private final UserAddressesRepository userAddressesRepository;
     private final CartItemRepository cartItemRepository;
+    private final ShopRepository shopRepository;
+    private final ProductSkuRepository productSkuRepository;
+    private final ShopOrderRepository shopOrderRepository;
+    private final PaymentRepository paymentRepository;
 
-    public OrderDto getOrderDetail(Integer orderId) {
-        Order order = orderRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+    //Utils
+    private final UserAddressMapper userAddressMapper;
 
-        return orderMapper.mapToOderDto(order);
+    private OrderItem mapCartItemToOrderItem(CartItem cartItem) {
+        ProductSku sku = cartItem.getProductSku();
+        return OrderItem.builder()
+                .product(sku.getProduct())
+                .sku(sku)
+                .priceAtPurchase(sku.getPrice())
+                .productNameSnapshot(sku.getProduct().getName())
+                .skuNameSnapshot(sku.getSkuCode())
+                .quantity(cartItem.getQuantity())
+                .build();
     }
+
+//    public OrderDto getOrderDetail(Integer orderId) {
+//        Order order = orderRepository.findByOrderId(orderId)
+//                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+//
+//        return orderMapper.mapToOderDto(order);
+//    }
 
     @Transactional
-    public OrderDto createOrder(CreateOrderRequest request, User user) throws BadRequestException {
+    public CreateOrderResponse createOrder(CreateOrderRequest request, User user) throws BadRequestException {
         UserAddress userAddress = userAddressesRepository.findByAddressId(request.getAddressId())
                 .orElseThrow(() -> new ResourceNotFoundException("User address not found"));
 
-        List<CartItem> cartItems = cartItemRepository.findAllById(request.getCartItems());
-        if (cartItems.isEmpty()) {
-            throw new ResourceNotFoundException("No items selected for checkout");
-        }
-
+        // Basic attribute
         Order newOrder = new Order();
         newOrder.setUser(user);
-        newOrder.setOrderStatus(OrderStatus.valueOf(request.getOrderStatus()));
-        newOrder.setShippingFee(request.getShippingFee());
-        newOrder.setUserAddress(userAddress);
+        newOrder.setTotalAmount(request.getTotalAmount());
+        newOrder.setShippingAddress(userAddressMapper.toAddressSnapshot(userAddress));
 
-
-        // 4. Process Items & Calculate Total (WITH STOCK CHECK)
-        List<OrderItem> orderItems = new ArrayList<>();
-        double subTotal = 0;
-
-        for (CartItem cartItem : cartItems) {
-            // A. Find the correct variant
-            ProductVariant variant = cartItem.getProduct().getVariants().stream()
-                    .filter(v -> v.getVariantId().equals(cartItem.getSizeId())) // Assuming sizeId maps to VariantId
-                    .findFirst()
-                    .orElseThrow(() -> new ResourceNotFoundException("Variant not found for Product: " + cartItem.getProduct().getName()));
-
-            // B. CHECK STOCK (Critical!)
-            if (variant.getStock() < cartItem.getQuantity()) {
-                throw new BadRequestException("Not enough stock for: " + cartItem.getProduct().getName());
+        PaymentStatus status = PaymentStatus.AWAITING_PAYMENT;
+        try {
+            if(request.getPaymentStatus() != null) {
+                status = PaymentStatus.valueOf(request.getPaymentStatus());
             }
+        } catch (IllegalArgumentException e) {
+            // Log warning or stick to default
+        }
+        newOrder.setPaymentStatus(status);
 
-            // C. DEDUCT STOCK
-            variant.setStock(variant.getStock() - cartItem.getQuantity());
-            // variantRepository.save(variant); // Optional if inside @Transactional (Hibernate handles dirty checking)
 
-            // D. Calculate Price Correctly (Price * Quantity)
-            double lineItemTotal = variant.getPrice() * cartItem.getQuantity();
-            subTotal += lineItemTotal;
+        // Payment
+        List<Payment> payments = new ArrayList<>();
+        if(request.getPaymentMethod() != null) {
+            Payment payment = new Payment();
+            try {
+                payment.setPaymentMethod(PaymentMethod.valueOf(request.getPaymentMethod()));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid Payment Method");
+            }
+            payment.setOrder(newOrder); // Link Payment -> Order
+            payment.setAmount(request.getTotalAmount());
+            payment.setTransactionId(request.getTransactionId());
+            payment.setUser(user);
+            payment.setPaymentStatus(status);
 
-            // E. Build OrderItem
-            OrderItem orderItem = OrderItem.builder()
-                    .order(newOrder)
-                    .quantity(cartItem.getQuantity()) // Ensure OrderItem stores quantity too
-                    .price(variant.getPrice()) // Store snapshot of price at time of purchase
-                    .product(cartItem.getProduct())
-                    .sizeId(cartItem.getSizeId())
-                    .colorId(cartItem.getColorId())
-                    .shop(cartItem.getProduct().getShop())
-                    .build();
-
-            orderItems.add(orderItem);
+            if(PaymentStatus.valueOf(request.getPaymentStatus()) == PaymentStatus.PAID) {
+                payment.setPaidAt(LocalDateTime.now());
+            }
+            payments.add(payment);
         }
 
-        // 5. Finalize Totals
-        double finalTotal = subTotal + request.getShippingFee();
+        newOrder.setPayments(payments);
 
-        newOrder.setOrderItems(orderItems);
-        newOrder.setTotalPrice(finalTotal);
 
-        Payment payment = new Payment();
-        payment.setUser(user);
-        payment.setOrder(newOrder);
-        payment.setAmount(finalTotal);
-        payment.setProvider(PaymentProvider.valueOf(request.getProvider()));
-        payment.setTransactionId(request.getTransactionId());
-        payment.setPaymentStatus(PaymentStatus.PENDING);
+        List<CartItem> itemsToDelete = new ArrayList<>();
+        if(request.getItemMap() != null) {
+            // Shop Orders and Order Items
+            List<ShopOrder> shopOrders = new ArrayList<>();
+            for(Map.Entry<Integer, List<Integer>> entry : request.getItemMap().entrySet()) {
+                Integer shopId = entry.getKey();
+                List<Integer> itemIds = entry.getValue();
+                List<CartItem> cartItems = cartItemRepository.findAllById(itemIds);
+                if(cartItems.isEmpty()) continue; // Skip if bad IDs
 
-        newOrder.setPayment(payment);
+                Shop shop = shopRepository.findByShopId(shopId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Shop not found"));
+
+                ShopOrder shopOrder = ShopOrder.builder()
+                        .shop(shop)
+                        .order(newOrder)
+                        .shippingFee(request.getShippingFeeMap().get(shopId))
+                        .orderStatus(OrderStatus.PENDING)
+                        .noteToSeller(request.getNoteMap().get(shopId))
+                        .subTotal(request.getSubTotalMap().get(shopId))
+                        .build();
+
+                List<OrderItem> orderItems = new ArrayList<>();
+                for (CartItem cartItem : cartItems) {
+                    // A. Map Data
+                    OrderItem orderItem = mapCartItemToOrderItem(cartItem);
+
+                    // B. CRITICAL: Link OrderItem -> ShopOrder (Owning Side)
+                    orderItem.setShopOrder(shopOrder);
+                    orderItems.add(orderItem);
+
+                    // C. Stock Deduction (Basic implementation)
+                    ProductSku sku = cartItem.getProductSku();
+                    if(sku.getStock() < cartItem.getQuantity()) {
+                        throw new BadRequestException("Not enough stock for: " + sku.getSkuCode());
+                    }
+                    sku.setStock(sku.getStock() - cartItem.getQuantity());
+                    productSkuRepository.save(sku); // If Transactional, explicit save might not be needed if Entity is managed, but safer to have if detached.
+                }
+                shopOrder.setOrderItems(orderItems);
+                shopOrders.add(shopOrder);
+
+                // Collect for deletion
+                itemsToDelete.addAll(cartItems);
+            }
+
+            newOrder.setShopOrders(shopOrders);
+        }
+
         Order savedOrder = orderRepository.save(newOrder);
 
-        cartItemRepository.deleteAll(cartItems);
-        return orderMapper.mapToOderDto(savedOrder);
+        // 5. Cleanup Cart (CRITICAL STEP MISSING IN ORIGINAL)
+        if (!itemsToDelete.isEmpty()) {
+            cartItemRepository.deleteAll(itemsToDelete);
+        }
+
+        return CreateOrderResponse.builder()
+                .orderId(savedOrder.getOrderId())
+                .paymentId(savedOrder.getPayments().get(0).getPaymentId())
+                .build();
     }
 
-    public OrderDto updateOrder(UpdateOrderRequest request, Integer orderId) {
-        UserAddress userAddress = userAddressesRepository.findByAddressId(request.getAddressId())
-                .orElseThrow(() -> new ResourceNotFoundException("User address not found"));
+//    public OrderDto updateOrder(UpdateOrderRequest request, Integer orderId) throws AccessDeniedException {
+//        if(!Objects.equals(orderId, request.getOrderId())) {
+//            throw new AccessDeniedException("Forbidden");
+//        }
+//        Order order = orderRepository.findByOrderId(orderId)
+//                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+//
+//        if(request.getPaymentStatus() != null) {
+//            order.setPaymentStatus(PaymentStatus.valueOf(request.getPaymentStatus()));
+//        }
+//
+//        Order savedOrder = orderRepository.save(order);
+//        return orderMapper.toOrderDto(savedOrder);
+//    }
 
-        Order order = orderRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        order.setUserAddress(userAddress);
-        order.setTotalPrice(request.getTotalPrice());
-        order.setShippingFee(request.getShippingFee());
+    public void deleteShopOrder(Integer shopOrderId, User user) throws AccessDeniedException {
+        ShopOrder shopOrder = shopOrderRepository.findByShopOrderId(shopOrderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shop order not found"));
 
-        Order savedOrder = orderRepository.save(order);
-        return orderMapper.mapToOderDto(savedOrder);
-    }
-
-    public OrderDto updateOrderStatus(UpdateOrderStatusRequest request, Integer orderId) {
-        Order order = orderRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-
-        order.setOrderStatus(OrderStatus.valueOf(request.getOrderStatus()));
-
-        Order savedOrder = orderRepository.save(order);
-        return orderMapper.mapToOderDto(savedOrder);
-    }
-
-    public void deleteOrder(Integer orderId, User user) throws AccessDeniedException {
-        Order order = orderRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        Order order = shopOrder.getOrder();
 
         if(!user.getUserId().equals(order.getUser().getUserId())) {
             throw new AccessDeniedException("Forbidden");
         }
 
-        orderRepository.delete(order);
+        shopOrder.setOrderStatus(OrderStatus.CANCELLED);
+        order.setPaymentStatus(PaymentStatus.CANCELLED);
+
+        shopOrderRepository.save(shopOrder);
+        orderRepository.save(order);
+    }
+
+    public ShopOrderDto updateShopOrder(UpdateShopOrderRequest request, Integer shopOrderId) throws AccessDeniedException {
+        if(!Objects.equals(shopOrderId, request.getShopOrderId())) {
+            throw new AccessDeniedException("Forbidden");
+        }
+
+        ShopOrder shopOrder = shopOrderRepository.findByShopOrderId(shopOrderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shop Order not found"));
+
+        shopOrder.setOrderStatus(OrderStatus.valueOf(request.getOrderStatus()));
+
+        ShopOrder savedShopOrder = shopOrderRepository.save(shopOrder);
+        return orderMapper.toShopOrderDto(savedShopOrder);
     }
 
 }

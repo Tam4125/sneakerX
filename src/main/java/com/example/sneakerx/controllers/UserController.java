@@ -3,53 +3,48 @@ package com.example.sneakerx.controllers;
 import com.example.sneakerx.dtos.order.OrderDto;
 import com.example.sneakerx.dtos.user.*;
 import com.example.sneakerx.entities.User;
-import com.example.sneakerx.mappers.UserMapper;
-import com.example.sneakerx.repositories.UserRepository;
 import com.example.sneakerx.services.UserService;
 import com.example.sneakerx.utils.ApiResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 @RestController
 @RequestMapping("/users")
+@RequiredArgsConstructor
 public class UserController {
-    @Autowired
-    private UserService userService;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserService userService;
 
-    @Autowired
-    private UserMapper userMapper;
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<CurrentUserResponse>> getCurrentUser(
+    public ResponseEntity<ApiResponse<UserDto>> getCurrentUser(
             @AuthenticationPrincipal User user
     ) {
-        CurrentUserResponse currentUserResponse = new CurrentUserResponse(user);
+        UserDto currentUser = userService.getCurrentUser(user);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Get current user successfully", currentUserResponse));
+                .body(ApiResponse.ok("Get current user successfully", currentUser));
     }
 
-    @GetMapping("/me/detail")
-    public ResponseEntity<ApiResponse<UserDto>> getUserDetail(
-            @AuthenticationPrincipal User user
+    @PutMapping("/me")
+    public ResponseEntity<ApiResponse<UserDto>> updateUserDetail(
+            @AuthenticationPrincipal User user,
+            @RequestBody UpdateUserRequest request
     ) {
-        UserDto userDto = userMapper.mapToUserDto(user);
+        UserDto userDto = userService.updateUserDetail(request,user);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Get user detail successfully", userDto));
+                .body(ApiResponse.ok("Update user detail successfully", userDto));
     }
+
 
     @GetMapping("/addresses")
     public ResponseEntity<ApiResponse<List<UserAddressDto>>> getUserAddresses(
@@ -70,7 +65,7 @@ public class UserController {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Get user addresses successfully", newUserAddress));
+                .body(ApiResponse.ok("Create user addresses successfully", newUserAddress));
 
     }
 
@@ -84,7 +79,7 @@ public class UserController {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Get user addresses successfully", userAddress));
+                .body(ApiResponse.ok("Update user addresses successfully", userAddress));
     }
 
     @DeleteMapping("/addresses/{addressId}")
@@ -96,32 +91,19 @@ public class UserController {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Get user addresses successfully", ""));
+                .body(ApiResponse.ok("Delete user addresses successfully", "Delete user addresses successfully"));
     }
 
     @GetMapping("/orders")
     public ResponseEntity<ApiResponse<List<OrderDto>>> getOrders(
             @AuthenticationPrincipal User user
     ) {
-        List<OrderDto> orderDtos = userService.getAllOrders(user);
+        List<OrderDto> orders = userService.getOrders(user);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Get orders by user successfully", orderDtos));
+                .body(ApiResponse.ok("Get orders by user successfully", orders));
 
-    }
-
-    @PutMapping("/{userId}")
-    public ResponseEntity<ApiResponse<UserDto>> updateUserDetail(
-            @AuthenticationPrincipal User user,
-            @PathVariable(name = "userId") Integer userId,
-            @ModelAttribute UpdateUserRequest request
-    ) throws IOException {
-        UserDto userDto = userService.updateUserDetail(request,user);
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(ApiResponse.ok("Update user detail successfully", userDto));
     }
 
 }

@@ -2,22 +2,12 @@ package com.example.sneakerx.mappers;
 
 import com.example.sneakerx.dtos.payment.PaymentDto;
 import com.example.sneakerx.entities.Payment;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Component
-@RequiredArgsConstructor
-public class PaymentMapper {
-    public PaymentDto mapToPaymentDto(Payment payment) {
-        PaymentDto paymentDto = new PaymentDto();
-        paymentDto.setAmount(payment.getAmount());
-        paymentDto.setPaymentId(payment.getPaymentId());
-        paymentDto.setPaymentStatus(payment.getPaymentStatus().toString());
-        paymentDto.setProvider(payment.getProvider().toString());
-        paymentDto.setOrderId(payment.getOrder().getOrderId());
-        paymentDto.setUserId(payment.getUser().getUserId());
-        paymentDto.setTransactionId(payment.getTransactionId());
-
-        return paymentDto;
-    }
+@Mapper(componentModel = "spring")
+public interface PaymentMapper {
+    @Mapping(source = "order.orderId", target = "orderId")
+    @Mapping(source = "user.userId", target = "userId")
+    PaymentDto toPaymentDto(Payment payment);
 }

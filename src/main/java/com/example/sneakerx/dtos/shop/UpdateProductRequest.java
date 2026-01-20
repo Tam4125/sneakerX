@@ -4,21 +4,29 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class UpdateProductRequest {
+    private Integer productId;
     private String name;
     private String description;
     private Integer shopId;
-    private String status;
-    private Integer categoryId;
+    private Integer categoryId; // If seller choose an existing category
+    private Double basePrice;
 
-    private List<String> keepImageUrls;
-    private List<VariantUpdateRequest> variants;
+    private List<Integer> keepImages;
+    private List<String> newImageUrls;
+
+    private Map<Integer, List<Integer>> keepAttributesKeepValues;
+    private Map<Integer, List<CreateAttributeValueRequest>> keepAttributesNewValues;
+    private List<CreateAttributeRequest> newAttributes;
+
+    private List<UpdateSkuRequest> existingSkus;
+    private List<CreateSkuRequest> newSkus;
 }

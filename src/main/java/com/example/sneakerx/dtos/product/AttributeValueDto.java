@@ -9,7 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProductImageResponse {
-    private Integer imageId;
+public class AttributeValueDto {
+    private Integer valueId;
+    private Integer attributeId;
+    private String value;
     private String imageUrl;
 }

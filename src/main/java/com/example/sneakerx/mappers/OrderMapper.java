@@ -2,47 +2,29 @@ package com.example.sneakerx.mappers;
 
 import com.example.sneakerx.dtos.order.OrderDto;
 import com.example.sneakerx.dtos.order.OrderItemDto;
+import com.example.sneakerx.dtos.order.ShopOrderDto;
 import com.example.sneakerx.entities.Order;
 import com.example.sneakerx.entities.OrderItem;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import com.example.sneakerx.entities.ShopOrder;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Component
-@RequiredArgsConstructor
-public class OrderMapper {
+@Mapper(
+        componentModel = "spring",
+        uses = {PaymentMapper.class, ShopMapper.class, ProductMapper.class}
+)
+public interface OrderMapper {
 
-    private final PaymentMapper paymentMapper;
-    private final ProductMapper productMapper;
+    @Mapping(source = "shopOrder.shopOrderId", target = "shopOrderId")
+    @Mapping(source = "product", target = "product")
+    OrderItemDto toOrderItemDto (OrderItem orderItem);
 
-    public OrderDto mapToOderDto(Order order) {
-        OrderDto orderDto = new OrderDto();
-        orderDto.setOrderId(order.getOrderId());
-        orderDto.setOrderStatus(order.getOrderStatus().toString());
-        orderDto.setUserId(order.getUser().getUserId());
-        orderDto.setTotalPrice(order.getTotalPrice());
-        orderDto.setShippingFee(order.getShippingFee());
-        orderDto.setAddressId(order.getUserAddress().getAddressId());
-        orderDto.setOrderItems(
-                order.getOrderItems().stream().map(
-                        this::mapToOrderItemDto
-                ).toList()
-        );
-        orderDto.setPayment(paymentMapper.mapToPaymentDto(order.getPayment()));
+    @Mapping(source = "order.orderId", target = "orderId")
+    @Mapping(source = "orderItems", target = "orderItems")
+    ShopOrderDto toShopOrderDto(ShopOrder shopOrder);
 
-        return orderDto;
-    }
-
-    public OrderItemDto mapToOrderItemDto(OrderItem orderItem) {
-        OrderItemDto orderItemDto = new OrderItemDto();
-        orderItemDto.setOrderItemId(orderItem.getOrderItemId());
-        orderItemDto.setOrderId(orderItem.getOrder().getOrderId());
-        orderItemDto.setSizeId(orderItem.getSizeId());
-        orderItemDto.setShopId(orderItem.getShop().getShopId());
-        orderItemDto.setColorId(orderItem.getColorId());
-        orderItemDto.setQuantity(orderItem.getQuantity());
-        orderItemDto.setProduct(productMapper.mapToDetailResponse(orderItem.getProduct()));
-        orderItemDto.setPrice(orderItem.getPrice());
-
-        return orderItemDto;
-    }
+    @Mapping(source = "user.userId", target = "userId")
+    @Mapping(source = "payments", target = "payments")
+    @Mapping(source = "shopOrders", target = "shopOrders")
+    OrderDto toOrderDto(Order order);
 }

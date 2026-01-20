@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -33,21 +35,27 @@ public class CloudinaryService {
     }
 
     // SCENARIO 2: SHOP PRODUCT (Images & Videos)
-    public String uploadProductMedia(MultipartFile file, Integer shopId) throws IOException {
+    public List<String> uploadProductMedia(List<MultipartFile> images, Integer shopId, Integer productId) throws IOException {
         // Logic: specific folder structure "sneakerx_products/shop_{ID}"
-        String publicId = "sneakerx_products/shop_" + shopId + "/" + UUID.randomUUID().toString();
-        Map params = ObjectUtils.asMap(
-                "resource_type", "auto",
-                "public_id", publicId
-        );
-        Map uploadResult;
-        // "Big Data" check (Video > 100MB)
-        if(file.getSize() > 104857600) {
-            uploadResult = cloudinary.uploader().uploadLarge(file.getInputStream(), params);
-        } else {
-            uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
+        List<String> imageUrls = new ArrayList<>();
+        for(MultipartFile image: images) {
+            String publicId = "sneakerx_products/shop_" + shopId + "/product_" + productId + "/" + UUID.randomUUID().toString();
+            Map params = ObjectUtils.asMap(
+                    "resource_type", "auto",
+                    "public_id", publicId
+            );
+            Map uploadResult;
+            // "Big Data" check (Video > 100MB)
+            if(image.getSize() > 104857600) {
+                uploadResult = cloudinary.uploader().uploadLarge(image.getInputStream(), params);
+            } else {
+                uploadResult = cloudinary.uploader().upload(image.getBytes(), params);
+            }
+
+            imageUrls.add(uploadResult.get("secure_url").toString());
         }
-        return uploadResult.get("secure_url").toString();
+
+        return imageUrls;
     }
 
     // SCENARIO 3: SHOP AVATAR

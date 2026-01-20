@@ -1,5 +1,6 @@
 package com.example.sneakerx.dtos.shop;
 
+import com.example.sneakerx.dtos.user.UserDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 @Builder
 public class ShopFollowerDto {
     private Integer followerId;
-    private Integer userId;
+    private UserDto user;
+    private ShopDto shop;
     private LocalDateTime followedAt;
 }

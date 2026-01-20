@@ -10,5 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class UpdatePaymentRequest {
+    private Integer paymentId;
     private String paymentStatus;
 }
