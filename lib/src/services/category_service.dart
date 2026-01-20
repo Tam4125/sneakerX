@@ -1,27 +1,30 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
-import 'package:sneakerx/src/config/app_config.dart';
+import 'package:dio/dio.dart';
 import 'package:sneakerx/src/models/category.dart';
+import 'package:sneakerx/src/utils/api_client.dart';
+import 'package:sneakerx/src/utils/api_response.dart';
 
 class CategoryService {
-  static const String baseUrl = "${AppConfig.baseUrl}/categories";
+  static const String _categoryPath = "/categories";
 
-  Future<List<ProductCategory>?> getCategories({int page = 0, int size = 5}) async {
-    final url = Uri.parse("$baseUrl?page=$page&size=$size");
+  Future<ApiResponse<List<ProductCategory>>> getCategories() async {
+    final endpoint = "$_categoryPath";
 
     try {
-      final response = await http.get(url);
-      if(response.statusCode == 200 || response.statusCode == 201) {
-        Map<String, dynamic> jsonMap = jsonDecode(response.body);
-        final List list = jsonMap['data']['content'];
+      final response = await ApiClient.get(endpoint);
 
-        return list.map((data) => ProductCategory.fromJson(data)).toList();
-
-      }
-    } catch (e) {
-      throw Exception("Error fetching categories: $e");
+      return ApiResponse.fromJson(
+          response.data,
+              (data) => (data as List?)
+                ?.map((ele) => ProductCategory.fromJson(ele as Map<String, dynamic>))
+                .toList() ?? []
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ??
+              "Service Error: Get categories failed",
+          data: null
+      );
     }
-    return null;
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:sneakerx/src/global_widgets/global_snackbar.dart';
 import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_request.dart';
 import 'package:sneakerx/src/modules/auth_features/views/general_button_loading.dart';
 import 'package:sneakerx/src/modules/auth_features/views/sign_up.dart';
@@ -44,7 +45,6 @@ class _SignInScreenState extends State<SignInScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +143,13 @@ class _SignInScreenState extends State<SignInScreen> {
                                         fontSize: 14
                                     ),
                                   ),
-                                  onPressed: () {print("Upcoming feature");},
+                                  onPressed: () {
+                                    GlobalSnackbar.show(
+                                      context,
+                                      success: false,
+                                      message: "Upcoming Feature"
+                                    );
+                                  },
                                 ),
                               ],
                             ),
@@ -171,7 +177,13 @@ class _SignInScreenState extends State<SignInScreen> {
                                 SizedBox(height: 10,),
 
                                 OutlinedButton(
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    GlobalSnackbar.show(
+                                        context,
+                                        success: false,
+                                        message: "Upcoming Feature"
+                                    );
+                                  },
                                   style: OutlinedButton.styleFrom(
                                       padding: EdgeInsets.all(10),
                                       shape: RoundedRectangleBorder(
@@ -218,7 +230,6 @@ class _SignInScreenState extends State<SignInScreen> {
                                     Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          // Pass the current 'productId' object to the next screen
                                             builder: (context) => SignUpScreen()
                                         )
                                     );
@@ -251,60 +262,57 @@ class _SignInScreenState extends State<SignInScreen> {
         return _isLoading
             ? GeneralButtonLoading()
             : GeneralButton(
-          description: "Sign In",
-          color: 0xFFFFFFFF,
-          onPressed: auth.isLoading ? null : () async {
-            if (_formKey.currentState!.validate()) {
-              final request = UserSignInRequest(
-                  identifier: _identifierController.text.trim(),
-                  password: _passwordController.text
-              );
-
-              setState(() {
-                _isLoading = true;
-              });
-              // 2. Call the Login function
-              bool success = await auth.login(request);
-
-              setState(() {
-                _isLoading = false;
-              });
-
-              // 3. Handle Success/Failure
-              if (success) {
-                if (mounted) {
-                  // Close keyboard
-                  FocusScope.of(context).unfocus();
-
-                  // Show success message
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Welcome back, ${auth.currentUser?.username}!"),
-                      backgroundColor: Colors.green,
-                    ),
+              description: "Sign In",
+              color: 0xFFFFFFFF,
+              onPressed: auth.isLoading ? null : () async {
+                if (_formKey.currentState!.validate()) {
+                  final request = UserSignInRequest(
+                      identifier: _identifierController.text.trim(),
+                      password: _passwordController.text
                   );
 
-                  // Navigate to MainWrapper and remove back stack history
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MainScreen()),
-                        (route) => false,
-                  );
+                  setState(() {
+                    _isLoading = true;
+                  });
+                  // 2. Call the Login function
+                  bool success = await auth.login(request);
+
+                  setState(() {
+                    _isLoading = false;
+                  });
+
+                  // 3. Handle Success/Failure
+                  if (success) {
+                    if (mounted) {
+                      // Close keyboard
+                      FocusScope.of(context).unfocus();
+
+                      // Show success message
+                      GlobalSnackbar.show(
+                        context,
+                        success: true,
+                        message: "Welcome back, ${auth.currentUser?.user.username}!"
+                      );
+
+                      // Navigate to MainWrapper and remove back stack history
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MainScreen()),
+                            (route) => false,
+                      );
+                    }
+                  } else {
+                    // 4. Handle Failure - Show API Error Message
+                    if (mounted) {
+                      GlobalSnackbar.show(
+                          context,
+                          success: false,
+                          message: auth.errorMessage ?? "Login failed. Please try again."
+                      );
+                    }
+                  }
                 }
-              } else {
-                // 4. Handle Failure - Show API Error Message
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      // Use 'auth.errorMessage' from Provider
-                      content: Text(auth.errorMessage ?? "Login failed. Please try again."),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            }
-          },
+              },
         );
       },
     );

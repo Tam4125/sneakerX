@@ -1,40 +1,61 @@
-import 'dart:convert';
-
-import 'package:sneakerx/src/config/app_config.dart';
+import 'package:dio/dio.dart';
+import 'package:sneakerx/src/models/payment.dart';
 import 'package:sneakerx/src/modules/checkout/dtos/create_stripe_intent_request.dart';
 import 'package:sneakerx/src/modules/checkout/dtos/create_stripe_intent_response.dart';
+import 'package:sneakerx/src/modules/checkout/dtos/update_payment_status.dart';
 import 'package:sneakerx/src/utils/api_client.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
 
 class PaymentService {
-  static const String baseUrl = "${AppConfig.baseUrl}/payments";
+  static const String _paymentPath = "/payments";
 
-  Future<CreateStripeIntentResponse?> createStripeIntent(CreateStripeIntentRequest request) async {
-    String url = "$baseUrl/create/stripe-intent";
+  Future<ApiResponse<CreateStripeIntentResponse>> createStripeIntent(CreateStripeIntentRequest request) async {
+    final endpoint = "$_paymentPath/create/stripe-intent";
+
+    print("CREATE STRIPE INTENT REQUEST??? : ${request.toJson()}");
 
     try {
       final response = await ApiClient.post(
-          url,
+          endpoint,
           request.toJson()
       );
 
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
+      print("CREATE STRIPE INTENT RESPONSE??? : ${response.data}");
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => CreateStripeIntentResponse.fromJson(data as Map<String, dynamic>)
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] ?? "Service Error: Create Stripe Intent failed",
+        data: null
+      );
+    }
+  }
 
-        // Parse the ApiResponse wrapper first
-        final apiResponse = ApiResponse<CreateStripeIntentResponse>.fromJson(
-            jsonMap,
-                (data) => CreateStripeIntentResponse.fromJson(data as Map<String, dynamic>)
-        );
+  Future<ApiResponse<Payment>> updatePaymentStatus(UpdatePaymentStatusRequest request) async {
+    final endpoint = "$_paymentPath/${request.paymentId}";
 
-        return apiResponse.data;
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Error create stripe payment intent");
-      }
-    } catch (e) {
-      throw Exception("Error create stripe payment intent: $e");
+    print("UPDATE PAYMENT REQUEST??? : ${request.toJson()}");
+
+    try {
+      final response = await ApiClient.put(
+          endpoint,
+          request.toJson()
+      );
+
+      return ApiResponse.fromJson(
+          response.data,
+              (data) => Payment.fromJson(data as Map<String, dynamic>)
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Update payment status failed",
+          data: null
+      );
     }
   }
 }

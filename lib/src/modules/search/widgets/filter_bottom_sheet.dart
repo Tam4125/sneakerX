@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:sneakerx/src/models/category.dart'; // Ensure this import exists
+import 'package:sneakerx/src/models/category.dart';
 import 'package:sneakerx/src/services/category_service.dart';
-import 'package:sneakerx/src/services/product_service.dart';
 import '../models_search/filter_options.dart';
 
 class FilterBottomSheet extends StatefulWidget {
@@ -52,10 +51,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
   Future<void> _fetchCategories() async {
     try {
-      final categories = await _categoryService.getCategories();
-      if (mounted) {
+      final response = await _categoryService.getCategories();
+
+      if (response.success && mounted) {
         setState(() {
-          _categories = categories ?? [];
+          _categories = response.data!;
           _isLoading = false;
         });
       }
@@ -98,7 +98,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Bộ lọc tìm kiếm',
+                  'Search Filter',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 IconButton(
@@ -118,7 +118,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 children: [
                   // 1. CATEGORY FILTER (Dynamic)
                   const Text(
-                    'Danh mục',
+                    'Category',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
@@ -126,7 +126,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   if (_isLoading)
                     const Center(child: CircularProgressIndicator())
                   else if (_categories.isEmpty)
-                    const Text("Không tải được danh mục", style: TextStyle(color: Colors.grey))
+                    const Text("Category not found", style: TextStyle(color: Colors.grey))
                   else
                     Wrap(
                       spacing: 8,
@@ -160,7 +160,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
                   // 2. PRICE RANGE FILTER
                   const Text(
-                    'Khoảng giá (VNĐ)',
+                    'Price',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
@@ -169,7 +169,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       Expanded(
                         child: _buildPriceInput(
                           controller: _minPriceController,
-                          hint: 'Tối thiểu',
+                          hint: 'Min',
                         ),
                       ),
                       Padding(
@@ -183,7 +183,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       Expanded(
                         child: _buildPriceInput(
                           controller: _maxPriceController,
-                          hint: 'Tối đa',
+                          hint: 'Max',
                         ),
                       ),
                     ],
@@ -216,7 +216,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       side: BorderSide(color: Colors.orange[700]!),
                     ),
                     child: Text(
-                      'Thiết lập lại',
+                      'Reset',
                       style: TextStyle(color: Colors.orange[700]),
                     ),
                   ),
@@ -240,7 +240,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       backgroundColor: Colors.orange[700],
                     ),
                     child: const Text(
-                        'Áp dụng',
+                        'Apply',
                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
                     ),
                   ),

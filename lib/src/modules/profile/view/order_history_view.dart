@@ -1,32 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:sneakerx/src/config/app_config.dart';
+import 'package:sneakerx/src/global_widgets/global_snackbar.dart';
 import 'package:sneakerx/src/models/enums/order_status.dart';
 import 'package:sneakerx/src/models/order.dart';
-import 'package:sneakerx/src/models/product.dart';
-import 'package:sneakerx/src/modules/profile/dtos/order_item_model.dart';
+import 'package:sneakerx/src/models/order_item.dart';
+import 'package:sneakerx/src/models/shop_order.dart';
+import 'package:sneakerx/src/modules/profile/widgets/rating_sheets.dart';
 import 'package:sneakerx/src/services/order_service.dart';
 import 'package:sneakerx/src/services/user_service.dart';
+import 'package:sneakerx/src/utils/api_response.dart';
 
 class OrderHistoryView extends StatefulWidget {
   final int initialIndex;
 
-  const OrderHistoryView({Key? key, this.initialIndex = 0}) : super(key: key);
+  const OrderHistoryView({super.key, this.initialIndex = 0});
 
   @override
   State<OrderHistoryView> createState() => _OrderHistoryViewState();
 }
 
 class _OrderHistoryViewState extends State<OrderHistoryView> with SingleTickerProviderStateMixin {
-  final Color primaryColor = const Color(0xFF8B5FBF); // Màu tím chủ đạo
   final UserService _userService = UserService();
   final OrderService _orderService = OrderService();
 
   late TabController _tabController;
-  late Future<List<Order>?> _ordersFuture;
+  late Future<ApiResponse<List<Order>>> _ordersFuture;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this, initialIndex: widget.initialIndex);
+    _tabController = TabController(length: 6, vsync: this, initialIndex: widget.initialIndex);
     _ordersFuture = _userService.getOrders();
   }
 
@@ -44,53 +48,67 @@ class _OrderHistoryViewState extends State<OrderHistoryView> with SingleTickerPr
         backgroundColor: Colors.white,
         elevation: 0.5,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: primaryColor),
+          icon: Icon(Icons.arrow_back, color: AppConfig.secondary200),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text("Đơn đã mua", style: TextStyle(color: Colors.black87, fontSize: 18)),
+        title: Text("My Orders", style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold)),
+        centerTitle: true,
         actions: [
-          IconButton(icon: Icon(Icons.search, color: primaryColor), onPressed: () {}),
-          IconButton(icon: Icon(Icons.chat_bubble_outline, color: primaryColor), onPressed: () {}),
+          IconButton(icon: Icon(Icons.search, color: AppConfig.secondary200), onPressed: () {}),
+          IconButton(icon: Icon(Icons.chat_bubble_outline, color: AppConfig.secondary200), onPressed: () {}),
         ],
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          labelColor: primaryColor,
+          labelColor: AppConfig.secondary200,
           unselectedLabelColor: Colors.black54,
-          indicatorColor: primaryColor,
+          indicatorColor: AppConfig.secondary200,
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: const [
-            Tab(text: "Chờ xác nhận"),
-            Tab(text: "Chờ giao hàng"),
-            Tab(text: "Đã giao"),
+            Tab(text: "Pending"),
+            Tab(text: "Awaiting Pickup"),
+            Tab(text: "Awaiting Delivery"),
+            Tab(text: "Delivered"),
+            Tab(text: "Returned"),
+            Tab(text: "Canceled"),
           ],
         ),
       ),
-      body: FutureBuilder(
+      body: FutureBuilder<ApiResponse<List<Order>>>(
         future: _ordersFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Colors.black,));
           } else if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
-          } else if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(child: Text("Orders not found"));
+          } else if (!snapshot.hasData || snapshot.data?.data == null) {
+            return const Center(child: Text("No orders found"));
           }
 
-          List<Order> orders = snapshot.data!;
+          List<Order> orders = snapshot.data!.data!;
+          List<ShopOrder> shopOrders = [];
+          for(var order in orders) {
+            shopOrders.addAll(order.shopOrders);
+          }
 
-          List<Order> pendingOrders = orders.where((order) => order.orderStatus == OrderStatus.PENDING).toList();
-          List<Order> shippedOrders = orders.where((order) => order.orderStatus == OrderStatus.SHIPPED || order.orderStatus == OrderStatus.PAID).toList();
-          List<Order> delieveredOrders = orders.where((order) => order.orderStatus == OrderStatus.DELIVERED).toList();
+          List<ShopOrder> pendingOrders = shopOrders.where((shopOrder) => shopOrder.orderStatus == OrderStatus.PENDING).toList();
+          List<ShopOrder> awaitingPickupOrders = shopOrders.where((shopOrder) => shopOrder.orderStatus == OrderStatus.CONFIRMED).toList();
+          List<ShopOrder> shippingOrders = shopOrders.where((shopOrder) => shopOrder.orderStatus == OrderStatus.SHIPPED).toList();
+          List<ShopOrder> deliveredOrders = shopOrders.where((shopOrder) => shopOrder.orderStatus == OrderStatus.DELIVERED).toList();
+          List<ShopOrder> returnedOrders = shopOrders.where((shopOrder) => shopOrder.orderStatus == OrderStatus.RETURNED).toList();
+          List<ShopOrder> canceledOrders = shopOrders.where((shopOrder) => shopOrder.orderStatus == OrderStatus.CANCELLED).toList();
 
           return TabBarView(
             controller: _tabController,
             children: [
               _buildTabContent(pendingOrders),
-              _buildTabContent(shippedOrders),
-              _buildTabContent(delieveredOrders),
+              _buildTabContent(awaitingPickupOrders),
+              _buildTabContent(shippingOrders),
+              _buildTabContent(deliveredOrders),
+              _buildTabContent(returnedOrders),
+              _buildTabContent(canceledOrders),
             ],
           );
         }
@@ -98,191 +116,177 @@ class _OrderHistoryViewState extends State<OrderHistoryView> with SingleTickerPr
     );
   }
 
-  // Nội dung từng Tab
-  Widget _buildTabContent(List<Order> orders) {
 
-    // NẾU KHÔNG CÓ ĐƠN HÀNG -> HIỆN EMPTY STATE + GỢI Ý
-    if (orders.isEmpty) {
-      return SingleChildScrollView(
+  Widget _buildTabContent(List<ShopOrder> shopOrders) {
+    if (shopOrders.isEmpty) {
+      return Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 1. Icon & Thông báo trống
-            Container(
-              height: 300,
-              width: double.infinity,
-              color: const Color(0xFFF5F5F5),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 100, height: 100,
-                    decoration: const BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage("assets/images/empty_order.png"),
-                          // Nếu chưa có ảnh, dùng Icon thay thế:
-                          // icon: Icon(Icons.assignment_outlined, size: 60, color: Colors.grey[300]),
-                        )
-                    ),
-                    child: Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey[300]), // Icon thay thế
-                  ),
-                  const SizedBox(height: 20),
-                  Text("Bạn chưa có đơn hàng nào cả", style: TextStyle(color: Colors.black54, fontSize: 16)),
-                ],
-              ),
-            ),
+            Icon(Icons.receipt_long, size: 80, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            const Text("No orders yet", style: TextStyle(color: Colors.grey)),
           ],
         ),
       );
     }
 
-    // NẾU CÓ ĐƠN HÀNG -> HIỆN LIST
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      itemCount: orders.length,
-      itemBuilder: (context, index) => _buildOrderItem(orders[index]),
+    return ListView.separated(
+      padding: const EdgeInsets.all(12),
+      itemCount: shopOrders.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) => _buildShopOrderCard(shopOrders[index]),
     );
   }
 
-  Widget _buildOrderItem(Order order) {
+  // --- ORDER CARD (The Single Shop Package) ---
+  Widget _buildShopOrderCard(ShopOrder shopOrder) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      color: Colors.white,
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0,2))
+          ]
+      ),
       child: Column(
         children: [
-          // --- 1. HEADER (Order ID) ---
+          // 1. HEADER: Shop Name & Status
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Đơn hàng #${order.orderId}",
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                // You can add status text here if you want
+                const Icon(Icons.store, size: 18, color: Colors.black87),
+                const SizedBox(width: 8),
                 Text(
-                    _getStatusText(order.orderStatus),
-                    style: TextStyle(color: primaryColor, fontSize: 13)
+                  shopOrder.shop.shopName,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const Spacer(),
+                Text(
+                  _getStatusText(shopOrder.orderStatus),
+                  style: const TextStyle(color: AppConfig.primary200, fontSize: 13, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
           ),
           const Divider(height: 1, thickness: 0.5),
 
-          // --- 2. LIST OF PRODUCTS (Loop) ---
-          // We use the spread operator (...) to expand the list of widgets into the Column
-          ...order.orderItems.map((item) {
+          // 2. ITEMS LIST
+          ...shopOrder.orderItems.map((item) => _buildProductRow(item)),
 
-            final orderItemModel = OrderItemModel.fromOrderItem(item);
+          const Divider(height: 1, thickness: 0.5),
 
-            return Column(
-              children: [
-                _buildProductRow(orderItemModel), // Build the row for this specific item
-                const Divider(height: 1, thickness: 0.5), // Separator between items
-              ],
-            );
-          }).toList(),
-
-          // --- 3. FOOTER (Total Money) ---
+          // 3. FOOTER: Total & Buttons
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text("Thành tiền: ", style: TextStyle(fontSize: 14)),
-                Text(
-                    Product.formatCurrency(order.totalPrice), // Assuming you have totalPrice in Order
-                    style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 16)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    const Text("Total: ", style: TextStyle(fontSize: 14)),
+                    Text(
+                      AppConfig.formatCurrency(shopOrder.subTotal + shopOrder.shippingFee),
+                      style: const TextStyle(color: AppConfig.primary200, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 12),
+
+                // ACTION BUTTONS (Dynamic based on status)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (shopOrder.orderStatus == OrderStatus.PENDING)
+                      OutlinedButton(
+                        onPressed: () => _showLogoutDialog(context, shopOrder.shopOrderId),
+                        style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.grey.shade300),
+                            foregroundColor: Colors.black87
+                        ),
+                        child: const Text("Cancel"),
+                      ),
+
+                    if (shopOrder.orderStatus == OrderStatus.CONFIRMED || shopOrder.orderStatus == OrderStatus.SHIPPED)
+                      ElevatedButton(
+                        onPressed: () {
+                          // Navigate to Review Screen
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: AppConfig.primary200,
+                            elevation: 0
+                        ),
+                        child: const Text("Location", style: TextStyle(color: Colors.black)),
+                      ),
+
+                    if (shopOrder.orderStatus == OrderStatus.DELIVERED)
+                      ElevatedButton(
+                        onPressed: () {
+                          _showRatingBottomSheet(context, shopOrder.orderItems);
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: AppConfig.primary200,
+                            elevation: 0
+                        ),
+                        child: const Text("Rate", style: TextStyle(color: Colors.black)),
+                      ),
+                  ],
+                )
               ],
             ),
           ),
-
-          // --- 4. ACTION BUTTONS ---
-          if (order.orderStatus == OrderStatus.PENDING)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton(
-                    onPressed: () async {
-                      try {
-                        final result = await _orderService.deleteOrder(order.orderId);
-
-                        if(result != null) {
-                          _showMessage("Đã hủy đơn hàng: ${order.orderId}");
-                          _refreshOrders();
-                        }
-                      } catch (e) {
-                        _showMessage("Lỗi hủy đơn hàng: $e");
-                      }
-                    },
-                    style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.grey.shade300)),
-                    child: const Text("Hủy đơn", style: TextStyle(color: Colors.black54)),
-                  ),
-                ],
-              ),
-            )
         ],
       ),
     );
   }
 
-
-// --- HELPER WIDGET FOR SINGLE ITEM ---
-  Widget _buildProductRow(OrderItemModel item) {
-    // Access data safely based on your specific model structure
-    // Assuming: OrderItem -> has 'productName', 'image', 'price', etc.
-    // OR if you need to go deeper: item.cartItem.product.name
-
-    // Example mapping (Adjust these fields to match your OrderItem model):
-    final String name = item.productName; // or item.cartItem.product.name
-    final String image = item.productImage; // or item.cartItem.product.images[0].url
-    final String variant = "${item.color} - ${item.size}"; // or item.variantName
-    final int qty = item.quantity;
-    final double price = item.price;
-
-    return Padding(
+  // --- ITEM ROW ---
+  Widget _buildProductRow(OrderItem item) {
+    return Container(
       padding: const EdgeInsets.all(12),
+      color: Colors.grey[50], // Slightly different bg for items
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product Image
+          // Image
           Container(
             width: 70, height: 70,
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade200),
               borderRadius: BorderRadius.circular(4),
+              color: Colors.white,
             ),
-            child: Image.network(
-              image,
-              fit: BoxFit.cover,
-              errorBuilder: (_,__,___) => const Icon(Icons.image_not_supported, color: Colors.grey),
-            ),
+            child: item.product.images.isNotEmpty
+                ? Image.network(item.product.images.first.imageUrl, fit: BoxFit.cover)
+                : const Icon(Icons.image_not_supported, color: Colors.grey),
           ),
           const SizedBox(width: 12),
 
-          // Product Info
+          // Details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 15)
+                Text(
+                  item.productNameSnapshot,
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
                 ),
-                const SizedBox(height: 5),
-                Text("Phân loại: $variant",
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12)
+                const SizedBox(height: 4),
+                Text(
+                  "Variation: ${item.skuNameSnapshot}",
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("x$qty", style: const TextStyle(fontSize: 13)),
+                    Text("x${item.quantity}", style: const TextStyle(fontSize: 13)),
                     Text(
-                        Product.formatCurrency(price),
-                        style: const TextStyle(fontSize: 13)
+                      AppConfig.formatCurrency(item.priceAtPurchase), // Snapshot price
+                      style: const TextStyle(fontSize: 13),
                     ),
                   ],
                 )
@@ -294,18 +298,60 @@ class _OrderHistoryViewState extends State<OrderHistoryView> with SingleTickerPr
     );
   }
 
+  void _showLogoutDialog(BuildContext context, int shopOrderId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Confirm"),
+        content: const Text("Are you sure you want to delete this order?"),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel", style: TextStyle(color: Colors.grey))),
+          TextButton(
+              onPressed: () async {
+                try {
+                  final result = await _orderService.deleteShopOrder(shopOrderId);
+                  Navigator.pop(ctx);
+
+                  if(result.success) {
+                    GlobalSnackbar.show(context, success: true, message: result.message);
+                    _refreshOrders();
+                  } else {
+                    GlobalSnackbar.show(context, success: false, message: result.message);
+                  }
+                } catch (e) {
+                  GlobalSnackbar.show(context, success: false, message: "Service Error: Delete order failed {$e}");
+                }
+              },
+              // Using primary Purple for confirm button
+              child: Text("Delete",
+                  style: TextStyle(
+                      color: AppConfig.secondary100,
+                      fontWeight: FontWeight.bold))),
+        ],
+      ),
+    );
+  }
+
+  void _showRatingBottomSheet(BuildContext context, List<OrderItem> items) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // Needed for full height behavior with keyboard
+      backgroundColor: Colors.transparent,
+      builder: (context) => RateProductSheet(items: items),
+    );
+  }
 
   String _getStatusText(OrderStatus status) {
     switch (status) {
-      case OrderStatus.PENDING: return "Chờ xác nhận";
-      case OrderStatus.SHIPPED: return "Đang giao";
-      case OrderStatus.DELIVERED: return "Hoàn thành";
+      case OrderStatus.PENDING: return "Pending";
+      case OrderStatus.CONFIRMED: return "Awaiting Pickup";
+      case OrderStatus.SHIPPED: return "Awaiting Delivery";
+      case OrderStatus.DELIVERED: return "Delivered";
+      case OrderStatus.CANCELLED: return "Cancelled";
+      case OrderStatus.RETURNED: return "Returned";
       default: return "";
     }
-  }
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, backgroundColor: Colors.grey[800]),
-    );
   }
 }

@@ -1,28 +1,42 @@
+import 'package:sneakerx/src/models/enums/payment_status.dart';
+import 'package:sneakerx/src/models/enums/payment_method.dart';
+
 class CreateOrderRequest {
   final int addressId;
-  final double shippingFee;
-  final List<int> cartItems;
-  final String provider;
+
+  final Map<int, String> noteMap;
+  final Map<int, List<int>> itemMap;
+  final Map<int, double> shippingFeeMap;
+  final Map<int, double> subTotalMap;
+  final double totalAmount;
+
+  final SneakerXPaymentMethod paymentMethod;
   final String transactionId;
-  final String orderStatus;
+  final PaymentStatus paymentStatus;
 
   CreateOrderRequest({
     required this.addressId,
-    required this.shippingFee,
-    required this.cartItems,
-    required this.provider,
+    required this.noteMap,
+    required this.itemMap,
+    required this.shippingFeeMap,
+    required this.subTotalMap,
+    required this.totalAmount,
+    required this.paymentMethod,
     required this.transactionId,
-    required this.orderStatus,
+    required this.paymentStatus,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'addressId': addressId,
-      'shippingFee': shippingFee,
-      'cartItems': cartItems,
-      'provider': provider,
+      'noteMap': noteMap.map((key, val) => MapEntry(key.toString(), val)),
+      'itemMap': itemMap.map((key, val) => MapEntry(key.toString(), val)),
+      'totalAmount': totalAmount,
+      'shippingFeeMap': shippingFeeMap.map((key, val) => MapEntry(key.toString(), val)),
+      'subTotalMap': subTotalMap.map((key, val) => MapEntry(key.toString(), val)),
+      'paymentMethod': paymentMethod.name,
       'transactionId': transactionId,
-      'orderStatus': orderStatus
+      'paymentStatus': paymentStatus.name
     };
   }
 

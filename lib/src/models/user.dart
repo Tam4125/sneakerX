@@ -3,7 +3,7 @@ import 'package:sneakerx/src/models/enums/user_status.dart';
 class User {
   final int userId;
   final String username;
-  final String fullName;
+  final String? fullName;
   final String email;
   final String phone;
   final String role;
@@ -14,7 +14,7 @@ class User {
   User({
     required this.userId,
     required this.username,
-    required this.fullName,
+    this.fullName,
     required this.email,
     required this.phone,
     required this.role,
@@ -26,12 +26,12 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       userId: json['userId'],
-      username: json['username'] ?? "",
-      fullName: json['fullName'] ?? "",
-      email: json['email'] ?? "",
-      phone: json['phone'] ?? "",
+      username: json['username'],
+      fullName: json['fullName'],
+      email: json['email'],
+      phone: json['phone'],
       role: json['role'] ?? "BUYER",
-      avatarUrl: json['avatarUrl'] ?? "",
+      avatarUrl: json['avatarUrl'],
       status: UserStatus.values.byName(json['status'] ?? "ACTIVE"),
       createdAt: DateTime.parse(json['createdAt']),
     );

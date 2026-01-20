@@ -8,8 +8,8 @@ class UpdateUserRequest {
   final String fullName;
   final String email;
   final String phone;
-  final UserStatus status;
-  final File? avatar;
+  final String status;
+  final String? avatarUrl;
 
   UpdateUserRequest({
     required this.userId,
@@ -18,6 +18,19 @@ class UpdateUserRequest {
     required this.email,
     required this.phone,
     required this.status,
-    this.avatar,
+    this.avatarUrl,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'username': username,
+      'fullName': fullName,
+      'email': email,
+      'phone': phone,
+      'status': status,
+      'avatarUrl': avatarUrl,
+    };
+  }
+
 }

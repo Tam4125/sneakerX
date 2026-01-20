@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:sneakerx/src/models/product.dart';
 import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/services/product_service.dart';
+import 'package:sneakerx/src/utils/api_response.dart';
 import '../widgets/custom_search_bar.dart';
 import '../widgets/banner_card.dart';
 import '../widgets/product_card.dart';
@@ -21,8 +22,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final ProductService _productService = ProductService();
 
   late List<BannerModel> _banners;
-  late Future<List<Product>?> _popularProductfuture;
-  late Future<List<Product>?> _favouriteProductfuture;
+  late Future<ApiResponse<List<Product>>> _popularProductfuture;
+  late Future<ApiResponse<List<Product>>> _favouriteProductfuture;
 
   @override
   void initState() {
@@ -66,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
               SizedBox(height: 12),
               _buildBannerSection(),
               SizedBox(height: 12),
-              _buildSneakerXLiveSection(context), // Truyền context vào để điều hướng
+              _buildSneakerXLiveSection(context),
               SizedBox(height: 12),
               _buildPopularProductGrid(),
               SizedBox(height: 12),
@@ -280,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPopularProductGrid() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: FutureBuilder<List<Product>?>(
+      child: FutureBuilder<ApiResponse<List<Product>>>(
         future: _popularProductfuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -291,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return const Center(child: Text("Product not found"));
           }
 
-          final popularProducts = snapshot.data!;
+          final popularProducts = snapshot.data!.data!;
 
           return Column(
             children: [
@@ -340,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildFavouriteProductGrid() {
     return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: FutureBuilder<List<Product>?>(
+        child: FutureBuilder<ApiResponse<List<Product>>>(
           future: _favouriteProductfuture,
           builder: (context,snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -351,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return const Center(child: Text("Product not found"));
             }
 
-            final List<Product> favouriteProducts = snapshot.data!;
+            final favouriteProducts = snapshot.data!.data!;
 
             return Column(
               children: [

@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
-import '../models/checkout_models.dart'; // Import model
+import 'package:sneakerx/src/config/app_config.dart'; // For formatCurrency
+import '../models/checkout_models.dart';
 
 class ShippingMethodSheet extends StatelessWidget {
   final ShippingMethod selectedShipping;
   final Function(ShippingMethod) onShippingSelected;
 
-  // Danh sách các gói vận chuyển
-  final List<ShippingMethod> _shippingOptions = [
-    ShippingMethod(id: 'GHN', name: "Giao Hàng Nhanh", estimateTime: "1-3 ngày", price: 30000),
-    ShippingMethod(id: 'GHTK', name: "Giao Hàng Tiết Kiệm", estimateTime: "3-5 ngày", price: 15000),
-    ShippingMethod(id: 'HOATOC', name: "Hỏa Tốc (Trong 2h)", estimateTime: "30 phút - 2 giờ", price: 50000),
-  ];
+  // Shipping Options (IDs match your Enum)
+  final List<ShippingMethod> _shippingOptions = CheckoutData.shippingOptions;
 
   ShippingMethodSheet({
     super.key,
@@ -29,19 +26,21 @@ class ShippingMethodSheet extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Text("Chọn phương thức vận chuyển", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text("Select Shipping Method", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 15),
           Expanded(
             child: ListView.builder(
               itemCount: _shippingOptions.length,
               itemBuilder: (context, index) {
                 final option = _shippingOptions[index];
+
+                // Compare IDs to see if selected
                 final isSelected = option.id == selectedShipping.id;
 
                 return InkWell(
                   onTap: () {
                     onShippingSelected(option);
-                    Navigator.pop(context); // Đóng popup sau khi chọn
+                    Navigator.pop(context);
                   },
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -56,26 +55,28 @@ class ShippingMethodSheet extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        // Radio button
+                        // Radio button visual
                         Icon(
                           isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
                           color: isSelected ? const Color(0xFF8B5FBF) : Colors.grey,
                         ),
                         const SizedBox(width: 12),
-                        // Thông tin
+
+                        // Info
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(option.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               const SizedBox(height: 4),
-                              Text("Nhận hàng: ${option.estimateTime}", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                              Text("Est. Arrival: ${option.estimateTime}", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                             ],
                           ),
                         ),
-                        // Giá tiền
+
+                        // Price
                         Text(
-                          "${option.price.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}đ",
+                          AppConfig.formatCurrency(option.price), // Use your AppConfig helper
                           style: const TextStyle(color: Color(0xFF8B5FBF), fontWeight: FontWeight.bold),
                         ),
                       ],

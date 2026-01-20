@@ -1,26 +1,21 @@
-import 'package:sneakerx/src/models/product.dart';
-
 class CartItem {
   final int itemId;
-  final Product product;
-  final int sizeId;
-  final int colorId;
+  final int cartId;
+  final int skuId;
   final int quantity;
 
   CartItem({
     required this.itemId,
-    required this.product,
-    required this.sizeId,
-    required this.colorId,
+    required this.cartId,
+    required this.skuId,
     required this.quantity,
   });
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
     return CartItem(
       itemId: json['itemId'],
-      product: Product.fromJson(json['product']),
-      sizeId: json['sizeId'],
-      colorId: json['colorId'],
+      cartId: json['cartId'],
+      skuId: json['skuId'],
       quantity: json['quantity']
     );
   }

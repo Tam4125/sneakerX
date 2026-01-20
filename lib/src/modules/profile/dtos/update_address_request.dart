@@ -6,6 +6,7 @@ class UpdateAddressRequest {
   final String district;
   final String ward;
   final String addressLine;
+  final bool isDefault;
 
   UpdateAddressRequest({
     required this.addressId,
@@ -15,6 +16,7 @@ class UpdateAddressRequest {
     required this.district,
     required this.ward,
     required this.addressLine,
+    required this.isDefault,
   });
 
   Map<String, dynamic> toJson() {
@@ -25,7 +27,8 @@ class UpdateAddressRequest {
       'provinceOrCity': provinceOrCity,
       'district': district,
       'ward': ward,
-      'addressLine': addressLine
+      'addressLine': addressLine,
+      'isDefault': isDefault,
     };
   }
 }

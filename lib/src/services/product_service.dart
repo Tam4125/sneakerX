@@ -1,121 +1,170 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
-import 'package:sneakerx/src/config/app_config.dart';
+import 'package:dio/dio.dart';
+import 'package:sneakerx/src/models/product_attribute.dart';
+import 'package:sneakerx/src/models/product_review.dart';
+import 'package:sneakerx/src/modules/product_detail/dtos/product_detail_response.dart';
+import 'package:sneakerx/src/modules/profile/dtos/create_review_request.dart';
 import 'package:sneakerx/src/modules/search/dtos/filter_query.dart';
+import 'package:sneakerx/src/utils/api_client.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
 import 'package:sneakerx/src/models/product.dart';
 
 class ProductService {
-  static const String baseUrl = "${AppConfig.baseUrl}/products";
+  static const String _productPath = "/products";
 
   // Fetch Product Detail by ID
-  Future<Product?> getProductById(int productId) async {
-    final url = Uri.parse("$baseUrl/$productId");
+  Future<ApiResponse<ProductDetailResponse>> getProductById(int productId) async {
+    final endpoint = "$_productPath/$productId";
 
     try {
-      final response = await http.get(url);
+      final response = await ApiClient.get(endpoint);
 
-      if(response.statusCode == 200 || response.statusCode == 201) {
-        Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-        // Parse the ApiResponse wrapper first
-        final apiResponse = ApiResponse<Product>.fromJson(
-          jsonMap,
-          (data) => Product.fromJson(data as Map<String, dynamic>)
-        );
-
-        return apiResponse.data;
-
-      } else {
-        throw Exception('Server error: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception("Error fetching products: $e");
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => ProductDetailResponse.fromJson(data as Map<String, dynamic>)
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] ?? "Service Error: Get product detail failed",
+        data: null
+      );
     }
   }
 
   // Fetch List of Popular Products
-  Future<List<Product>?> fetchPopularProducts({int page = 0, int size = 10}) async {
-    final url = Uri.parse("$baseUrl/popular?page=$page&size=$size");
+  Future<ApiResponse<List<Product>>> fetchPopularProducts({int page = 0, int size = 10}) async {
+    final endpoint = "$_productPath/popular?page=$page&size=$size";
 
     try {
-      final response = await http.get(url);
-      if(response.statusCode == 200 || response.statusCode == 201) {
-        Map<String, dynamic> jsonMap = jsonDecode(response.body);
-        final List list = jsonMap['data']['content'];
+      final response = await ApiClient.get(endpoint);
 
-        return list.map((data) => Product.fromJson(data)).toList();
-
-      }
-    } catch (e) {
-      throw Exception("Error fetching popular products: $e");
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => ((data as Map<String, dynamic>?)?['content'] as List?)
+            ?.map((ele) => Product.fromJson(ele as Map<String, dynamic>))
+            .toList() ?? []
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] ?? "Service Error: Get popular products failed",
+        data: null
+      );
     }
-    return null;
   }
 
   // Fetch List of Favourite Products
-  Future<List<Product>?> fetchFavouriteProducts({int page = 0, int size = 10}) async {
-    final url = Uri.parse("$baseUrl/popular?page=$page&size=$size");
+  Future<ApiResponse<List<Product>>> fetchFavouriteProducts({int page = 0, int size = 10}) async {
+    final endpoint = "$_productPath/favourite?page=$page&size=$size";
 
     try {
-      final response = await http.get(url);
-      if(response.statusCode == 200 || response.statusCode == 201) {
-        Map<String, dynamic> jsonMap = jsonDecode(response.body);
-        final List list = jsonMap['data']['content'];
+      final response = await ApiClient.get(endpoint);
 
-        return list.map((data) => Product.fromJson(data)).toList();
-      }
-    } catch (e) {
-      throw Exception("Error fetching favourite products: $e");
+      return ApiResponse.fromJson(
+          response.data,
+            (data) => ((data as Map<String, dynamic>?)?['content'] as List?)
+              ?.map((ele) => Product.fromJson(ele as Map<String, dynamic>))
+              .toList() ?? []
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Get favourite products failed",
+          data: null
+      );
     }
-    return null;
+  }
+
+  Future<ApiResponse<List<ProductAttribute>>> fetchPopularAttributes({int page = 0, int size = 10}) async {
+    final endpoint = "$_productPath/attributes/popular?page=$page&size=$size";
+
+    try {
+      final response = await ApiClient.get(endpoint);
+
+      return ApiResponse.fromJson(
+          response.data,
+              (data) => ((data as Map<String, dynamic>?)?['content'] as List?)
+              ?.map((ele) => ProductAttribute.fromJson(ele as Map<String, dynamic>))
+              .toList() ?? []
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Get popular attributes failed",
+          data: null
+      );
+    }
   }
 
   // Fetch List of Search Products
-  Future<List<Product>?> searchProducts(FilterQuery query, {int page = 0, int size = 20}) async {
-    // Start with the base search endpoint
-    // Note: Added /search if your backend endpoint is /products/search
-    String url = "$baseUrl?page=$page&size=$size";
+  Future<ApiResponse<List<Product>>> searchProducts(FilterQuery query, {int page = 0, int size = 20}) async {
+    String endpoint = "$_productPath?page=$page&size=$size";
 
     // 1. Keyword
     if (query.q != null && query.q!.isNotEmpty) {
-      url += "&q=${query.q}";
+      endpoint += "&q=${query.q}";
     }
 
     // 2. Category ID (CHANGED)
     // Backend expects: @RequestParam Long categoryId
     if (query.categoryId != null) {
-      url += "&categoryId=${query.categoryId}";
+      endpoint += "&categoryId=${query.categoryId}";
     }
 
     // 3. Min Price
     if (query.minPrice != null) {
-      url += "&minPrice=${query.minPrice}";
+      endpoint += "&minPrice=${query.minPrice}";
     }
 
     // 4. Max Price
     if (query.maxPrice != null) {
-      url += "&maxPrice=${query.maxPrice}";
+      endpoint += "&maxPrice=${query.maxPrice}";
     }
-
-    final uri = Uri.parse(url);
 
     try {
-      final response = await http.get(uri);
+      final response = await ApiClient.get(endpoint);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-        // Access the 'content' list inside the 'data' Page object
-        final List list = jsonMap['data']['content'];
-
-        return list.map((data) => Product.fromJson(data)).toList();
-      }
-    } catch (e) {
-      throw Exception("Error searching products: $e");
+      return ApiResponse.fromJson(
+          response.data,
+              (data) => ((data as Map<String, dynamic>?)?['content'] as List?)
+              ?.map((ele) => Product.fromJson(ele as Map<String, dynamic>))
+              .toList() ?? []
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Search products failed",
+          data: null
+      );
     }
-    return null;
+  }
+
+  Future<ApiResponse<List<ProductReview>>> createReviews(CreateReviewRequest request) async {
+    final endpoint = "$_productPath/reviews";
+
+    print("CREATE REVIEWS REQUEST??? : ${request.toJson()}");
+
+    try {
+      final response = await ApiClient.post(
+        endpoint,
+        request.toJson()
+      );
+
+      print("CREATE REVIEWS RESPONSE??? : ${response.data}");
+
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => (data as List?)
+            ?.map((ele) => ProductReview.fromJson(ele as Map<String, dynamic>))
+            .toList() ?? []
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] ?? "Service Error: Create reviews failed",
+        data: null
+      );
+    }
   }
 
 }

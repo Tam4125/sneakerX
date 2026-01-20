@@ -1,36 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:sneakerx/src/modules/seller_dashboard/widgets/icon_button_widget.dart';
 import 'package:sneakerx/src/modules/seller_info/screens/edit_seller_infor.dart';
-import 'package:sneakerx/src/modules/seller_info/widgets/infofield.dart';
-import 'package:sneakerx/src/modules/seller_info/widgets/number_format.dart';
 import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/services/shop_service.dart';
-import 'package:sneakerx/src/services/user_service.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 
 class SellerInfo extends StatefulWidget {
   const SellerInfo({Key? key}) : super(key: key);
 
   @override
-  State<SellerInfo> createState() => _SellerInfo();
+  State<SellerInfo> createState() => _SellerInfoState();
 }
 
-class _SellerInfo extends State<SellerInfo> {
-  final UserService _userService = UserService();
+class _SellerInfoState extends State<SellerInfo> {
   final ShopService _shopService = ShopService();
 
   bool _isLoading = true;
 
-  String _shopName = "Shop name";
-  String _shopDescription = "Shop description";
-  String _shopLogoUrl = "Shop logo url";
-  double _shopRating = 0;
-  int _shopFollower = 0;
-  String _shopAddress = "Shop address";
-  String _shopEmail = "Shop email";
-  String _shopPhone = "Shop phone number";
+  // --- Display Data ---
+  String _shopName = "";
+  String _shopDescription = "No description provided.";
+  String _shopLogoUrl = "";
+  DateTime? _createdAt;
+
+  // Stats
+  double _shopRating = 0.0;
+  int _followerCount = 0;
+  int _productCount = 0;
+  int _orderCount = 0;
+
+  // Contact Info
+  String _shopEmail = "";
+  String _shopPhone = "No phone set";
 
   @override
   void initState() {
@@ -40,235 +43,254 @@ class _SellerInfo extends State<SellerInfo> {
 
   Future<void> _initializeData() async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    final user = auth.currentUser;
+    final user = auth.currentUser?.user;
 
     try {
-      final shop = await _shopService.getCurrentUserShop();
-      final addresses = await _userService.getAddresses();
+      // 1. Fetch Shop Details (Returns ApiResponse<ShopDetailResponse>)
+      final shopRes = await _shopService.getCurrentUserShop();
+      // 2. Fetch User Addresses
 
-      // 2. Wrap updates in setState so the UI refreshes
       if (mounted) {
         setState(() {
-          if (shop != null) {
-            _shopName = shop.shopName;
-            _shopDescription = shop.shopDescription ?? "";
-            _shopLogoUrl = shop.shopLogo;
-            _shopRating = shop.rating;
-            _shopFollower = shop.followersCount;
-          } else {
-            _showMessage("Không tìm thấy thông tin Shop");
+          // --- Parse Shop Data ---
+          if (shopRes.success && shopRes.data != null) {
+            final data = shopRes.data!;
+
+            // Basic Info
+            _shopName = data.shop.shopName;
+            _shopDescription = data.shop.shopDescription ?? "No description provided.";
+            _shopLogoUrl = data.shop.shopLogo;
+            _createdAt = data.shop.createdAt;
+            _shopRating = data.shop.rating;
+
+            // Computed Stats from Lists
+            _followerCount = data.followers.length; // Or use data.shop.followersCount
+            _productCount = data.products.length;
+            _orderCount = data.shopOrders.length;
+          }
+          if (user != null) {
+            _shopEmail = user.email;
+            _shopPhone = user.phone;
           }
 
-          if (addresses != null && addresses.isNotEmpty) {
-            final address = addresses.first;
-            _shopPhone = address.phone;
-            _shopAddress = '${address.addressLine}, ${address.ward}, ${address.district}, ${address.provinceOrCity}';
-            _shopEmail = user?.email ?? "";
-          }
-
-          // Data loading finished
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        _showMessage("Lỗi tải dữ liệu: $e");
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
       }
     }
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        backgroundColor: Colors.grey[800],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         centerTitle: true,
         backgroundColor: Colors.white,
-        elevation: 2,
-
-        leading: IconButtonWidget(
-          icon: Icons.home,
-          onPressed: () {
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => MainScreen()
-                )
-            );
-          },
-        ),
-        title:
-        Text(
-          'Thông tin Shop',
-          style: GoogleFonts.inter(
-            fontSize: 18,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -1,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.home, color: Colors.black, size: 20),
+          onPressed: () => Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const MainScreen()),
+                  (r) => false
           ),
         ),
+        title: Text(
+          'Shop Profile',
+          style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+        ),
         actions: [
-          IconButtonWidget(
-              onPressed: () async {
-                // Wait for edit screen to return 'true'
-                final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const EditShopInfoScreen())
-                );
-
-                // If returned true, reload data to show changes
-                if (result == true) {
-                  _initializeData();
-                }
-              },
-              icon: Icons.edit)
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: Colors.black),
+            onPressed: () async {
+              final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const EditShopInfoScreen())
+              );
+              if (result == true) {
+                setState(() => _isLoading = true);
+                _initializeData();
+              }
+            },
+          )
         ],
       ),
       body: _isLoading
-        ? Center(child: CircularProgressIndicator(),)
-        : SingleChildScrollView(
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        child:
-        Padding(
-          padding: EdgeInsets.fromLTRB(30.0, 30.0, 30.0, 60.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                alignment: Alignment.bottomRight,
+          ? const Center(child: CircularProgressIndicator(color: Colors.black))
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // --- 1. HEADER PROFILE ---
+            Container(
+              width: 100, height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey[100],
+                border: Border.all(color: Colors.grey[200]!, width: 2),
+                image: _shopLogoUrl.isNotEmpty
+                    ? DecorationImage(image: NetworkImage(_shopLogoUrl), fit: BoxFit.cover)
+                    : null,
+              ),
+              child: _shopLogoUrl.isEmpty ? const Icon(Icons.store, size: 40, color: Colors.grey) : null,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _shopName.isNotEmpty ? _shopName : "Unnamed Shop",
+              style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _createdAt != null
+                  ? "Joined ${DateFormat('MMMM yyyy').format(_createdAt!)}"
+                  : "Joined Recently",
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
+            ),
+
+            const SizedBox(height: 30),
+
+            // --- 2. STATS DASHBOARD ---
+            // Using a Grid-like layout for better data presentation
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F9FA),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey[100]!),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CircleAvatar(
-                    radius: 72,
-                    backgroundColor: Color(0xFF86F4B5),
-                    child: CircleAvatar(
-                      radius: 64.0, // Inner circle radius
-                      backgroundImage: NetworkImage(_shopLogoUrl),
-                    ),
+                  _buildStatItem(
+                      _shopRating.toStringAsFixed(1),
+                      "Rating",
+                      Icons.star_rounded,
+                      Colors.amber
                   ),
-                  const CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.black,
-                    child: Icon(Icons.store,
-                        size: 24, color: Color(0xFF86F4B5)),
+                  _buildDivider(),
+                  _buildStatItem(
+                      _formatCount(_followerCount),
+                      "Followers",
+                      Icons.people_alt_rounded,
+                      Colors.blue
+                  ),
+                  _buildDivider(),
+                  _buildStatItem(
+                      _productCount.toString(),
+                      "Products",
+                      Icons.inventory_2_rounded,
+                      Colors.purple
+                  ),
+                  _buildDivider(),
+                  _buildStatItem(
+                      _orderCount.toString(),
+                      "Orders",
+                      Icons.shopping_bag_rounded,
+                      Colors.green
                   ),
                 ],
               ),
-              const SizedBox (height: 40,),
-              Text(_shopName,
-                style: GoogleFonts.robotoMono(
-                  fontSize: 24,
-                  letterSpacing: -1,
-                  fontWeight: FontWeight.w500,
-                ),
+            ),
+
+            const SizedBox(height: 30),
+
+            // --- 3. ABOUT SECTION ---
+            Align(
+                alignment: Alignment.centerLeft,
+                child: Text("About Shop", style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold))
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _shopDescription,
+                style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600], height: 1.5),
               ),
-              const SizedBox (height: 40),
-              Container(
-                alignment: Alignment.topLeft,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      alignment: Alignment.topLeft,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: Color(0xFF86F4B5),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
-                        child: Infofield(
-                          label: 'Đánh giá',
-                          text: '$_shopRating/5.00',
-                          labelIcons: Icons.star,
-                          size: 20,
-                        ),
-                      ),
-                    ),
+            ),
 
-                    Container(
-                      alignment: Alignment.topLeft,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: Color(0xFF86F4B5),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-                        child: Infofield(
-                          label: 'Người theo dõi',
-                          text: formatCount(_shopFollower),
-                          labelIcons: Icons.person,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            const SizedBox(height: 30),
+            const Divider(thickness: 1, color: Color(0xFFEEEEEE)),
+            const SizedBox(height: 20),
 
-              const SizedBox (height: 20),
+            // --- 4. CONTACT INFO ---
+            Align(
+                alignment: Alignment.centerLeft,
+                child: Text("Contact Information", style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold))
+            ),
+            // const SizedBox(height: 16),
+            // _buildContactItem(Icons.location_on_outlined, "Address", _shopAddress),
+            const SizedBox(height: 16),
+            _buildContactItem(Icons.email_outlined, "Email", _shopEmail),
+            const SizedBox(height: 16),
+            _buildContactItem(Icons.phone_outlined, "Phone", _shopPhone),
 
-              Divider(),
-
-              const SizedBox (height: 20),
-
-              Infofield(
-                label: 'Mô Tả Shop',
-                text: _shopDescription ?? '',
-                labelIcons: Icons.description,
-              ),
-
-              const SizedBox (height: 20),
-
-              Divider(),
-
-              const SizedBox (height: 20),
-
-              Infofield(
-                label: 'Địa chỉ của shop',
-                text: _shopAddress,
-                labelIcons: Icons.markunread_mailbox,
-              ),
-              const SizedBox (height: 20),
-
-              Divider(),
-
-              const SizedBox (height: 20),
-
-              Infofield(
-                label: 'Email',
-                text: _shopEmail,
-                labelIcons: Icons.mail,
-              ),
-              const SizedBox (height: 20),
-
-              Divider(),
-
-
-              const SizedBox (height: 20),
-
-              Infofield(
-                label: 'Số điện thoại',
-                text: _shopPhone,
-                labelIcons: Icons.phone_enabled,
-              ),
-            ],
-          ),
+            // Bottom spacing
+            const SizedBox(height: 40),
+          ],
         ),
       ),
-      );
+    );
+  }
+
+  // --- Helper Widgets ---
+
+  Widget _buildDivider() {
+    return Container(width: 1, height: 30, color: Colors.grey[300]);
+  }
+
+  Widget _buildStatItem(String value, String label, IconData icon, Color color) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+          child: Icon(icon, size: 18, color: color),
+        ),
+        const SizedBox(height: 8),
+        Text(value, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        Text(label, style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[600])),
+      ],
+    );
+  }
+
+  Widget _buildContactItem(IconData icon, String title, String content) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey[200]!)
+          ),
+          child: Icon(icon, size: 20, color: Colors.black87),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              Text(content, style: GoogleFonts.inter(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        )
+      ],
+    );
+  }
+
+  String _formatCount(int count) {
+    if (count < 1000) return count.toString();
+    return "${(count / 1000).toStringAsFixed(1)}k";
   }
 }

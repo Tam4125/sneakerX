@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/models/enums/order_status.dart';
-import 'package:sneakerx/src/models/order.dart';
-import 'package:sneakerx/src/models/product.dart';
-import 'package:sneakerx/src/modules/seller_dashboard/models/shop_stats.dart';
+import 'package:sneakerx/src/models/shop_order.dart';
+import 'package:sneakerx/src/models/shops.dart';
+import 'package:sneakerx/src/modules/seller_dashboard/models/shop_detail.dart';
+import 'package:sneakerx/src/screens/main_screen.dart';
+import 'package:sneakerx/src/screens/seller_main_screen.dart';
 import 'package:sneakerx/src/services/shop_service.dart';
-import 'package:sneakerx/src/utils/auth_provider.dart';
+import 'package:sneakerx/src/utils/api_response.dart';
 
-// --- MAIN DASHBOARD SCREEN ---
+
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({super.key});
 
@@ -18,274 +21,177 @@ class SellerDashboardScreen extends StatefulWidget {
 
 class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   final ShopService _shopService = ShopService();
-  late Future<ShopStats?> _futureShopStats;
+  late Future<ApiResponse<ShopDetailResponse>> _detailFuture;
 
   @override
   void initState() {
     super.initState();
-    _futureShopStats = _initSellerDashboardData();
-  }
-
-  Future<ShopStats?> _initSellerDashboardData() async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-
-    try {
-      final shop = await _shopService.getCurrentUserShop();
-      if (shop == null) {
-        _showMessage("Get shop information failed");
-        return null;
-      }
-
-      // Ensure shopId is not null
-      if (auth.shopId == null) {
-        return null;
-      }
-
-      final orders = await _shopService.getShopOrders(auth.shopId!);
-      if (orders == null) {
-        _showMessage("Get shop orders failed");
-        return null;
-      }
-
-      return ShopStats(shop: shop, orders: orders);
-    } catch (e) {
-      _showMessage("Get Seller dashboard information failed: $e");
-    }
-    return null;
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.grey[800],
-      ),
-    );
+    _detailFuture = _shopService.getCurrentUserShop();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Row(
-          children: [
-            // Use Shop Logo or Placeholder
-            FutureBuilder<ShopStats?>(
-                future: _futureShopStats,
-                builder: (context, snapshot) {
-                  String logoUrl = "https://i.pravatar.cc/150?img=33";
-                  if(snapshot.hasData && snapshot.data?.shop.shopLogo != null) {
-                    logoUrl = snapshot.data!.shop.shopLogo;
-                  }
-                  return CircleAvatar(
-                    radius: 18,
-                    backgroundImage: NetworkImage(logoUrl),
-                  );
-                }
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Xin chào,", style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_outlined, color: Colors.black),
-            onPressed: () {},
-          )
-        ],
-      ),
-      body: FutureBuilder<ShopStats?>(
-        future: _futureShopStats,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          } else if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(child: Text("Không thể tải dữ liệu Dashboard"));
-          }
+    return FutureBuilder<ApiResponse<ShopDetailResponse>>(
+      future: _detailFuture,
+      builder: (context, snapshot) {
 
-          final shopStats = snapshot.data!;
-          final shop = shopStats.shop;
-          final orders = shopStats.orders;
-
-          // --- CALCULATE STATS ---
-          // 1. Revenue (Sum of PAID or DELIVERED orders)
-          double totalRevenue = orders
-              .where((o) => o.orderStatus == OrderStatus.PAID || o.orderStatus == OrderStatus.DELIVERED)
-              .fold(0, (sum, o) => sum + o.totalPrice);
-
-          // 2. Order Counts
-          int pendingCount = orders.where((o) => o.orderStatus == OrderStatus.PENDING || o.orderStatus == OrderStatus.SHIPPED).length;
-          int cancelledCount = orders.where((o) => o.orderStatus == OrderStatus.CANCELLED).length;
-          int deliveredCount = orders.where((o) => o.orderStatus == OrderStatus.DELIVERED).length;
-
-          // 3. Sort Orders (Newest First) - Assuming orderId is incremental or you have createdAt
-          // orders.sort((a, b) => b.orderId.compareTo(a.orderId));
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. REVENUE CARD
-                _buildRevenueCard(totalRevenue, shop.rating),
-
-                const SizedBox(height: 24),
-
-                // 2. ORDER STATUS GRID
-                Text("Tình trạng đơn hàng", style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                _buildStatsGrid(pendingCount, cancelledCount, deliveredCount, shop.followersCount),
-
-                const SizedBox(height: 24),
-
-                // 3. RECENT ORDERS LIST
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("Đơn hàng mới", style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
-                    TextButton(onPressed: () {}, child: const Text("Xem tất cả")),
-                  ],
-                ),
-                _buildRecentOrdersList(orders, shop.shopId),
-              ],
-            ),
+        // --- LOADING STATE ---
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
           );
-        },
-      ),
+        }
+
+        // --- ERROR STATE ---
+        else if (snapshot.hasError) {
+          return Scaffold(
+            appBar: AppBar(title: const Text("Error")),
+            body: Center(child: Text("Error: ${snapshot.error}")),
+          );
+        }
+
+        // --- EMPTY DATA STATE ---
+        else if (!snapshot.hasData || snapshot.data?.data == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text("Shop Dashboard")),
+            body: const Center(child: Text("Unable to load Shop Data")),
+          );
+        }
+
+        // --- SUCCESS STATE: Extract Data ---
+        final data = snapshot.data!.data!;
+        final shop = data.shop;
+        final orders = data.shopOrders;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8F9FA),
+
+          appBar: _buildAppBar(shop),
+
+          body: _buildDashboardBody(shop, orders),
+        );
+      },
     );
   }
 
-  // --- WIDGET BUILDERS ---
-
-  Widget _buildRevenueCard(double revenue, double rating) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E), // Dark card theme
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5)),
-        ],
+  // Updated AppBar to accept Shop data
+  AppBar _buildAppBar(Shop shop) {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: IconButton(
+        icon: Icon(Icons.home),
+        onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => MainScreen(initialIndex: 0,)));},
       ),
-      child: Stack(
+      title: Row(
         children: [
-          Positioned(
-            right: -20,
-            top: -20,
-            child: Icon(Icons.monetization_on_outlined, size: 150, color: Colors.white.withOpacity(0.05)),
+          CircleAvatar(
+            radius: 18,
+            // 3. Use the real logo or a fallback
+            backgroundImage: (shop.shopLogo.isNotEmpty)
+                ? NetworkImage(shop.shopLogo)
+                : NetworkImage(AppConfig.baseAvatartUrl),
           ),
+          const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Tổng doanh thu", style: GoogleFonts.inter(color: Colors.grey[400], fontSize: 14)),
-              const SizedBox(height: 8),
-              Text(
-                Product.formatCurrency(revenue),
-                style: GoogleFonts.anton(color: Colors.white, fontSize: 42, letterSpacing: 1),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  _buildMiniStat("Đánh giá", "$rating ⭐", Colors.yellow),
-                  const SizedBox(width: 20),
-                  // Placeholder for views if not available in API
-                  _buildMiniStat("Lượt xem", "--", Colors.blueAccent),
-                ],
-              )
+              Text("Shop Dashboard", style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
+              Text(shop.shopName, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black)),
             ],
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMiniStat(String label, String value, Color valueColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: GoogleFonts.inter(color: Colors.grey[500], fontSize: 12)),
-        Text(value, style: GoogleFonts.inter(color: valueColor, fontWeight: FontWeight.bold, fontSize: 16)),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_none_outlined, color: Colors.black),
+          onPressed: () {},
+        )
       ],
     );
   }
+  // Moved the body logic to a separate helper function for cleanliness
+  Widget _buildDashboardBody(Shop shop, List<ShopOrder> orders) {
+    // --- 1. CALCULATE STATS ---
+    double totalRevenue = orders
+        .where((o) => o.orderStatus == OrderStatus.DELIVERED)
+        .fold(0.0, (sum, o) => sum + o.subTotal);
 
-  Widget _buildStatsGrid(int pending, int cancelled, int returned, int followers) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.5,
-      children: [
-        _buildStatCard("Chờ xác nhận", pending.toString(), Icons.hourglass_empty, Colors.orange),
-        _buildStatCard("Đơn hủy", cancelled.toString(), Icons.cancel_outlined, Colors.red),
-        // If you don't track returns, you can change this to "Hoàn thành" or other stat
-        _buildStatCard("Đã Giao", returned.toString(), Icons.assignment_return_outlined, Colors.purple),
-        _buildStatCard("Người theo dõi", followers.toString(), Icons.person_add_alt, const Color(0xFF86F4B5)),
-      ],
-    );
-  }
+    int processingCount = orders.where((o) =>
+    o.orderStatus == OrderStatus.PENDING ||
+        o.orderStatus == OrderStatus.CONFIRMED // Assuming CONFIRMED exists
+    ).length;
 
-  Widget _buildStatCard(String title, String count, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
+    int cancelledCount = orders.where((o) => o.orderStatus == OrderStatus.CANCELLED).length;
+    int returnCount = orders.where((o) => o.orderStatus == OrderStatus.RETURNED).length;
+
+    // Sort orders by date (Newest first)
+    // Create a new list to sort so we don't mutate the original snapshot data strictly
+    List<ShopOrder> sortedOrders = List.from(orders);
+    sortedOrders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return SingleChildScrollView(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, color: color, size: 28),
-              Text(count, style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold)),
-            ],
+          DashboardCard(
+            onTap: () {},
+            processingCount: processingCount.toString(),
+            canceledCount: cancelledCount.toString(),
+            returnedCount: returnCount.toString(),
+            reviewCount: shop.rating.toStringAsFixed(1),
+            totalRevenue: AppConfig.formatCurrency(totalRevenue), // Use formatter here
           ),
-          Text(title, style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w500)),
+
+          const SizedBox(height: 20),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "New Orders",
+                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                TextButton(
+                    onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => SellerMainScreen(initialIndex: 2,)));},
+                    child: const Text("All Orders")
+                ),
+              ],
+            ),
+          ),
+
+          _buildRecentOrdersList(sortedOrders),
+
+          const SizedBox(height: 40),
         ],
       ),
     );
   }
 
-  Widget _buildRecentOrdersList(List<Order> orders, int shopId) {
-    // Show only top 5 orders
+  Widget _buildRecentOrdersList(List<ShopOrder> orders) {
+    if (orders.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24.0),
+        child: Text("No Orders yet"),
+      );
+    }
+
+    // Take top 5
     final recentOrders = orders.take(5).toList();
 
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: recentOrders.length,
       itemBuilder: (context, index) {
         final order = recentOrders[index];
 
-        // Find the product name for this shop (assuming 1 item per shop-order split, or pick first)
-        String productName = "Sản phẩm";
-        try {
-          final item = order.orderItems.firstWhere((i) => i.shopId == shopId);
-          productName = item.product.name; // Assuming OrderItem -> Product -> name
-        } catch(e) {
-          productName = "Order #${order.orderId}";
+        // Product Name Logic (Get first item name)
+        String productName = "Product";
+        if (order.orderItems.isNotEmpty) {
+          productName = order.orderItems[0].productNameSnapshot; // Uncomment if model supports
         }
 
         return Container(
@@ -304,23 +210,38 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.shopping_bag_outlined, color: Colors.black54),
+                child: const Icon(Icons.inventory, color: Colors.black54),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(productName, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(
+                        productName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15)
+                    ),
                     const SizedBox(height: 4),
-                    Text("#${order.orderId}", style: GoogleFonts.inter(color: Colors.grey, fontSize: 12)),
+                    Text(
+                        "ID: ${order.shopOrderId}",
+                        style: GoogleFonts.inter(color: Colors.grey, fontSize: 12)
+                    ),
+                    Text(
+                        DateFormat('dd/MM/yyyy HH:mm').format(order.createdAt),
+                        style: GoogleFonts.inter(color: Colors.grey[400], fontSize: 10)
+                    ),
                   ],
                 ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(Product.formatCurrency(order.totalPrice), style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: const Color(0xFF8B5FBF))),
+                  Text(
+                      AppConfig.formatCurrency(order.subTotal), // Using subTotal from ShopOrder
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: const Color(0xFF8B5FBF))
+                  ),
                   const SizedBox(height: 4),
                   _buildStatusChip(order.orderStatus),
                 ],
@@ -333,26 +254,33 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
   }
 
   Widget _buildStatusChip(OrderStatus status) {
-    String text;
     Color color;
+    String text;
 
     switch (status) {
       case OrderStatus.PENDING:
-        text = "Chờ xác nhận";
+        text = "Pending";
         color = Colors.orange;
         break;
-      case OrderStatus.SHIPPED: // Assuming you have SHIPPED or similar
-        text = "Đang giao";
+      case OrderStatus.CONFIRMED:
+        text = "Awaiting Pickup";
+        color = Colors.yellow;
+        break;
+      case OrderStatus.SHIPPED:
+        text = "Awaiting Delivery";
         color = Colors.blue;
         break;
       case OrderStatus.DELIVERED:
-      case OrderStatus.PAID:
-        text = "Hoàn thành";
+        text = "Delivered";
         color = Colors.green;
         break;
       case OrderStatus.CANCELLED:
-        text = "Đã hủy";
+        text = "Canceled";
         color = Colors.red;
+        break;
+      case OrderStatus.RETURNED:
+        text = "Returned";
+        color = Colors.purple;
         break;
       default:
         text = status.name;
@@ -369,6 +297,121 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
         text,
         style: GoogleFonts.inter(color: color, fontSize: 10, fontWeight: FontWeight.bold),
       ),
+    );
+  }
+}
+
+
+class DashboardCard extends StatelessWidget {
+  final VoidCallback onTap;
+  final String processingCount;
+  final String canceledCount;
+  final String returnedCount;
+  final String reviewCount;
+  final String totalRevenue;
+
+  const DashboardCard({
+    super.key,
+    required this.onTap,
+    required this.processingCount,
+    required this.canceledCount,
+    required this.returnedCount,
+    required this.reviewCount,
+    this.totalRevenue = "\$0.00", // Default
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A), // Using dark background per your design
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10, offset: const Offset(0,5))
+            ]
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Stats Grid
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildStatItem('Processing Orders:', processingCount),
+                    _buildStatItem('Canceled Orders:', canceledCount),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildStatItem('Returned Orders:', canceledCount),
+                    _buildStatItem('Rate:', reviewCount),
+                  ],
+                ),
+
+                const SizedBox(height: 30),
+
+                // Big Revenue Text
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Revenue",
+                      style: GoogleFonts.anton(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      totalRevenue.isNotEmpty ? totalRevenue : "\$0.00",
+                      style: GoogleFonts.inter(
+                        color: const Color(0xff86f4b5), // Green accent
+                        fontSize: 32,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.robotoMono(
+            color: Colors.grey[400],
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

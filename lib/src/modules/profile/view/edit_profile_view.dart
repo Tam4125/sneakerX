@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:sneakerx/src/global_widgets/global_snackbar.dart';
 import 'package:sneakerx/src/models/enums/user_status.dart';
 import 'package:sneakerx/src/models/user.dart';
 import 'package:sneakerx/src/modules/profile/dtos/update_user_request.dart';
+import 'package:sneakerx/src/modules/profile/view/settings_view.dart';
+import 'package:sneakerx/src/services/media_service.dart';
 import 'package:sneakerx/src/services/user_service.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 
 class EditProfileView extends StatefulWidget {
-  // Optional: Flag to know if we should pop back to checkout
-  final bool isFromCheckout;
-
-  const EditProfileView({Key? key, this.isFromCheckout = false}) : super(key: key);
+  const EditProfileView({super.key});
 
   @override
   State<EditProfileView> createState() => _EditProfileViewState();
@@ -21,6 +21,7 @@ class EditProfileView extends StatefulWidget {
 
 class _EditProfileViewState extends State<EditProfileView> {
   final UserService _userService = UserService();
+  final MediaService _mediaService = MediaService();
   final _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
@@ -33,40 +34,34 @@ class _EditProfileViewState extends State<EditProfileView> {
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _phoneCtrl = TextEditingController();
 
+
   // Default Status
   UserStatus _selectedStatus = UserStatus.ACTIVE;
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentData();
+    _loadInitialData();
   }
 
-  Future<void> _loadCurrentData() async {
-    setState(() => _isLoading = true);
-    try {
-      // 1. Fetch latest data from API
-      final user = await _userService.getUserDetail();
+  void _loadInitialData() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final userSignIn = auth.currentUser;
+    final user = userSignIn!.user;
+    _currentUserData = user;
+    _usernameCtrl.text = user.username;
+    _fullNameCtrl.text = user.fullName ?? "";
+    _emailCtrl.text = user.email;
+    _phoneCtrl.text = user.phone;
+  }
 
-      if (user != null) {
-        _currentUserData = user;
-
-        // 2. Pre-fill the controllers
-        _usernameCtrl.text = user.username ?? "";
-        _fullNameCtrl.text = user.fullName ?? "";
-        _emailCtrl.text = user.email ?? "";
-        _phoneCtrl.text = user.phone ?? "";
-
-        // 3. Pre-select status (if API returns null, default to ACTIVE)
-        if(user.status != null) {
-          _selectedStatus = user.status;
-        }
-      }
-    } catch (e) {
-      _showMessage("Lỗi tải thông tin: $e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  @override
+  void dispose() {
+    _usernameCtrl.dispose();
+    _fullNameCtrl.dispose();
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _pickImage() async {
@@ -87,6 +82,21 @@ class _EditProfileViewState extends State<EditProfileView> {
     setState(() => _isLoading = true);
 
     try {
+      // Upload to cloudinary to get avatar url
+      String? avatarUrl;
+      if(_avatarFile != null) {
+        try {
+          final avatarResponse = await _mediaService.uploadUserAvatar(_avatarFile, _currentUserData!.userId);
+          if(avatarResponse.success) {
+            avatarUrl = avatarResponse.data;
+          } else {
+            GlobalSnackbar.show(context, success: false, message: avatarResponse.message);
+          }
+        } catch(e) {
+          GlobalSnackbar.show(context, success: false, message: e.toString());
+        }
+      }
+
       // 1. Prepare Request Object
       final request = UpdateUserRequest(
         userId: _currentUserData!.userId, // Use ID from loaded data
@@ -94,35 +104,31 @@ class _EditProfileViewState extends State<EditProfileView> {
         fullName: _fullNameCtrl.text,
         email: _emailCtrl.text,
         phone: _phoneCtrl.text,
-        status: _selectedStatus,
-        avatar: _avatarFile, // Can be null
+        status: _selectedStatus.name,
+        avatarUrl: avatarUrl, // Can be null
       );
 
       // 2. Call Service
-      final updatedUser = await _userService.updateUserDetail(request);
+      final updateResponse = await _userService.updateUserDetail(request);
 
-      if (updatedUser != null) {
-        _showMessage("Cập nhật hồ sơ thành công!");
+      if (updateResponse.success) {
 
         // 3. Update Provider (Optional but recommended to keep app state fresh)
         Provider.of<AuthProvider>(context, listen: false).tryAutoLogin();
+        if (mounted) setState(() => _isLoading = false);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => SettingsView())
+        );
 
-        // 4. Navigate back (Return 'true' if we came from checkout)
-        if (mounted) {
-          Navigator.pop(context, true);
-        }
+      } else {
+        GlobalSnackbar.show(context, success: false, message: updateResponse.message);
       }
     } catch (e) {
-      _showMessage("Lỗi cập nhật: ${e.toString().replaceAll("Exception: ", "")}");
+      GlobalSnackbar.show(context, success: false, message: e.toString());
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating, backgroundColor: Colors.grey[800]),
-    );
   }
 
   @override
@@ -136,7 +142,7 @@ class _EditProfileViewState extends State<EditProfileView> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text("Chỉnh sửa hồ sơ", style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: Text("Edit Profile", style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: _isLoading && _currentUserData == null
@@ -187,11 +193,11 @@ class _EditProfileViewState extends State<EditProfileView> {
               // --- 2. FORM FIELDS ---
               _buildTextField("Username", _usernameCtrl, icon: Icons.alternate_email),
               const SizedBox(height: 16),
-              _buildTextField("Họ và tên", _fullNameCtrl, icon: Icons.person_outline),
+              _buildTextField("Full name", _fullNameCtrl, icon: Icons.person_outline),
               const SizedBox(height: 16),
               _buildTextField("Email", _emailCtrl, icon: Icons.email_outlined, inputType: TextInputType.emailAddress),
               const SizedBox(height: 16),
-              _buildTextField("Số điện thoại", _phoneCtrl, icon: Icons.phone_android, inputType: TextInputType.phone),
+              _buildTextField("Phone number", _phoneCtrl, icon: Icons.phone_android, inputType: TextInputType.phone),
               const SizedBox(height: 16),
 
               // --- 3. STATUS DROPDOWN ---
@@ -236,7 +242,9 @@ class _EditProfileViewState extends State<EditProfileView> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleSave,
+                  onPressed: () async {
+                    _isLoading ? null : await _handleSave();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF86F4B5),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -244,7 +252,7 @@ class _EditProfileViewState extends State<EditProfileView> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.black)
-                      : Text("Lưu thay đổi", style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                      : Text("Save", style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
                 ),
               ),
             ],
@@ -259,7 +267,7 @@ class _EditProfileViewState extends State<EditProfileView> {
     return TextFormField(
       controller: controller,
       keyboardType: inputType,
-      validator: (value) => value!.isEmpty ? "Vui lòng nhập $label" : null,
+      validator: (value) => value!.isEmpty ? "Please, enter $label" : null,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: icon != null ? Icon(icon, color: Colors.grey) : null,

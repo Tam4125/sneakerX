@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:sneakerx/src/modules/checkout/dtos/create_stripe_intent_request.dart';
-import 'package:sneakerx/src/services/payment_service.dart';
 import '../models/checkout_models.dart';
 
 class PaymentMethodSheet extends StatefulWidget {
@@ -14,25 +11,12 @@ class PaymentMethodSheet extends StatefulWidget {
 }
 
 class _PaymentMethodSheetState extends State<PaymentMethodSheet> {
+  // 1. Payment Methods (IDs match your Enum)
+  final List<PaymentMethodModel> methods = CheckoutData.paymentMethods;
 
-  final PaymentService _paymentService = PaymentService();
-  bool _isLoading = false;
-  // Danh sách phương thức thanh toán
-  final List<PaymentMethodModel> methods = [
-    PaymentMethodModel(id: 'COD', name: "Thanh toán khi nhận hàng (COD)", iconData: Icons.money),
-    PaymentMethodModel(id: 'STRIPE', name: "Ví STRIPE", iconData: Icons.account_balance_wallet),
-    PaymentMethodModel(id: 'BANK', name: "Chuyển khoản Ngân hàng", iconData: Icons.account_balance, isBankTransfer: true),
-  ];
+  // 2. Bank List (Sample data for Bank Transfer flow)
+  final List<BankModel> banks = CheckoutData.banks;
 
-  // Danh sách ngân hàng
-  final List<BankModel> banks = [
-    BankModel(id: 'VCB', name: "Vietcombank", shortName: "VCB", logoUrl: "https://img.mservice.io/momo_app_v2/img/Vietcombank.png"),
-    BankModel(id: 'MB', name: "MB Bank", shortName: "MB", logoUrl: "https://img.mservice.io/momo_app_v2/img/MBBank.png"),
-    BankModel(id: 'TCB', name: "Techcombank", shortName: "TCB", logoUrl: "https://img.mservice.io/momo_app_v2/img/Techcombank.png"),
-    BankModel(id: 'ACB', name: "Ngân hàng Á Châu", shortName: "ACB", logoUrl: "https://img.mservice.io/momo_app_v2/img/ACB.png"),
-  ];
-
-  // Trạng thái: đang xem danh sách ngân hàng hay danh sách phương thức chính
   bool isSelectingBank = false;
 
   @override
@@ -47,24 +31,24 @@ class _PaymentMethodSheetState extends State<PaymentMethodSheet> {
           Row(
             children: [
               if (isSelectingBank)
-                IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() => isSelectingBank = false)),
+                IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => setState(() => isSelectingBank = false)
+                ),
               Expanded(
                 child: Text(
-                  isSelectingBank ? "Chọn Ngân hàng" : "Phương thức thanh toán",
+                  isSelectingBank ? "Select Bank" : "Payment Method",
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   textAlign: isSelectingBank ? TextAlign.left : TextAlign.center,
                 ),
               ),
-              if (isSelectingBank) const SizedBox(width: 48) // Cân bằng layout
+              if (isSelectingBank) const SizedBox(width: 48) // Balance layout
             ],
           ),
           const SizedBox(height: 10),
-          if (_isLoading)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
-          else
-            Expanded(
-              child: isSelectingBank ? _buildBankList() : _buildMethodList(),
-            )
+          Expanded(
+            child: isSelectingBank ? _buildBankList() : _buildMethodList(),
+          )
         ],
       ),
     );
@@ -78,13 +62,13 @@ class _PaymentMethodSheetState extends State<PaymentMethodSheet> {
         return ListTile(
           leading: Icon(method.iconData, color: const Color(0xFF8B5FBF)),
           title: Text(method.name),
-          subtitle: method.id == 'STRIPE' ? const Text("Thẻ Visa/Mastercard") : null,
+          subtitle: method.id == 'STRIPE' ? const Text("Visa / Mastercard") : null,
           trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-          onTap: () async {
+          onTap: () {
             if (method.isBankTransfer) {
               setState(() => isSelectingBank = true);
             } else {
-              // Normal methods (COD)
+              // For COD, STRIPE, etc.
               widget.onMethodSelected(method, null);
               Navigator.pop(context);
             }
@@ -94,7 +78,6 @@ class _PaymentMethodSheetState extends State<PaymentMethodSheet> {
     );
   }
 
-  // Màn hình 2: Danh sách Ngân hàng
   Widget _buildBankList() {
     return ListView.builder(
       itemCount: banks.length,
@@ -104,14 +87,13 @@ class _PaymentMethodSheetState extends State<PaymentMethodSheet> {
           leading: Container(
             width: 40, height: 40,
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(4)),
-            // Dùng icon nếu ảnh lỗi
             child: Image.network(bank.logoUrl, errorBuilder: (c,e,s) => const Icon(Icons.account_balance)),
           ),
           title: Text(bank.shortName, style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text(bank.name),
           onTap: () {
-            // Tìm lại method BANK để trả về cùng với Bank đã chọn
-            final bankMethod = methods.firstWhere((m) => m.isBankTransfer);
+            // Return BANKING method + Selected Bank
+            final bankMethod = methods.firstWhere((m) => m.id == 'BANKING');
             widget.onMethodSelected(bankMethod, bank);
             Navigator.pop(context);
           },

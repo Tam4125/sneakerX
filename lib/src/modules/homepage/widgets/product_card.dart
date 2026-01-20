@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/models/product.dart';
-import 'package:intl/intl.dart';
 import 'package:sneakerx/src/modules/product_detail/view/product_detail_view.dart';
 
 class ProductCard extends StatelessWidget {
@@ -10,11 +10,6 @@ class ProductCard extends StatelessWidget {
     super.key,
     required this.product,
   });
-
-  String _formatPrice(double price) {
-    final formatter = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
-    return formatter.format(price);
-  }
 
   String _formatSoldCount(int soldCount) {
     if (soldCount >= 1000000) {
@@ -34,7 +29,7 @@ class ProductCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             // Pass the current 'productId' object to the next screen
-            builder: (context) => ProductDetailView(productId: product.productId)
+            builder: (context) => ProductDetailScreen(productId: product.productId)
           )
         );
       },
@@ -78,23 +73,16 @@ class ProductCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween, // Quan trọng: Đẩy nội dung ra 2 đầu
                   children: [
                     // Block tên và mô tả
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min, // Chỉ chiếm diện tích cần thiết
-                      children: [
-                        Text(
-                          product.name,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14, // Giảm nhẹ font size nếu cần
-                          ),
-                          maxLines: 2, // Cho phép tên dài 2 dòng
-                          overflow: TextOverflow.ellipsis,
+                    Flexible(
+                      child: Text(
+                        product.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
-                        // Đã xóa phần Description để tránh vỡ layout.
-                        // Shopee ở màn hình ngoài thường ít hiện mô tả chi tiết vì tốn chỗ.
-                        // Nếu muốn hiện, hãy đảm bảo GridView đủ cao.
-                      ],
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis, // Cắt bớt bằng "..."
+                      ),
                     ),
 
                     // Block Giá và Rating
@@ -103,7 +91,7 @@ class ProductCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _formatPrice(product.variants.isNotEmpty ? product.variants.first.price : 0),
+                          AppConfig.formatCurrency(product.basePrice),
                           style: TextStyle(
                             color: Colors.orange[700],
                             fontWeight: FontWeight.bold,
@@ -123,11 +111,14 @@ class ProductCard extends StatelessWidget {
                               }
                             }),
                             SizedBox(width: 4),
-                            Text(
-                              _formatSoldCount(product.soldCount),
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[600],
+                            Expanded( // Thêm Expanded ở đây phòng trường hợp số lượng bán quá dài
+                              child: Text(
+                                'Sold ${_formatSoldCount(product.soldCount)}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey[600],
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],

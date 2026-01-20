@@ -1,10 +1,8 @@
-import 'dart:io';
-
 class UpdateShopRequest {
   final int shopId;
   final String shopName;
   final String shopDescription;
-  final File? shopLogo;
+  final String? shopLogo;
 
   UpdateShopRequest({
     required this.shopId,
@@ -12,4 +10,13 @@ class UpdateShopRequest {
     required this.shopDescription,
     this.shopLogo,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'shopId': shopId,
+      'shopName': shopName,
+      'shopDescription': shopDescription,
+      'shopLogo': shopLogo
+    };
+  }
 }

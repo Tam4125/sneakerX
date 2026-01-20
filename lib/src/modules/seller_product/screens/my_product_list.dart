@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:sneakerx/src/models/shops.dart';
-import 'package:sneakerx/src/modules/seller_dashboard/widgets/icon_button_widget.dart';
+import 'package:sneakerx/src/modules/seller_dashboard/models/shop_detail.dart';
 import 'package:sneakerx/src/modules/seller_product/screens/product_addition.dart';
 import 'package:sneakerx/src/modules/seller_product/widgets/product_list.dart';
 import 'package:sneakerx/src/screens/main_screen.dart';
 import 'package:sneakerx/src/services/shop_service.dart';
+import 'package:sneakerx/src/utils/api_response.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 
 class ShopProductList extends StatefulWidget {
   const ShopProductList({super.key});
 
   @override
-  State<ShopProductList> createState() => _ShopProductList();
+  State<ShopProductList> createState() => _ShopProductListState();
 }
 
-class _ShopProductList extends State<ShopProductList> {
+class _ShopProductListState extends State<ShopProductList> {
   final ShopService _shopService = ShopService();
-  late Future<Shop?> _shopsFuture;
+  late Future<ApiResponse<ShopDetailResponse>> _shopsFuture;
 
   @override
   void initState() {
@@ -26,7 +26,6 @@ class _ShopProductList extends State<ShopProductList> {
     _loadData();
   }
 
-  // REFRESH LOGIC: Simply re-assigning the Future triggers the FutureBuilder
   void _loadData() {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     setState(() {
@@ -38,99 +37,97 @@ class _ShopProductList extends State<ShopProductList> {
     });
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.grey[800],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50], // Light background for contrast
       appBar: AppBar(
         centerTitle: true,
         backgroundColor: Colors.white,
-        elevation: 1,
-        leading: IconButtonWidget(
-          icon: Icons.home,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.home, size: 20, color: Colors.black),
           onPressed: () {
             Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const MainScreen()),
-                    (route) => false
+                    (r) => false
             );
           },
         ),
         title: Text(
-          'Sản phẩm của tôi',
+          'My Products',
           style: GoogleFonts.inter(
             fontSize: 18,
-            fontWeight: FontWeight.w500,
-            letterSpacing: -1,
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
-      // Use FutureBuilder directly. No need for manual _isLoading flag.
-      body: FutureBuilder<Shop?>(
+      body: FutureBuilder<ApiResponse<ShopDetailResponse>>(
         future: _shopsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: Colors.black));
           } else if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
-          } else if (!snapshot.hasData || snapshot.data == null) {
+          } else if (!snapshot.hasData || snapshot.data?.data == null) {
             return const Center(child: Text("Shop not found"));
           }
 
-          // Safe access to products
-          final items = snapshot.data?.products ?? [];
+          final data = snapshot.data!.data!;
+          final products = data.products;
 
-          if (items.isEmpty) {
-            return SafeArea(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey[300]),
-                    const SizedBox(height: 20),
-                    const Text("Bạn chưa có sản phẩm nào cả", style: TextStyle(color: Colors.black54, fontSize: 16)),
-                  ],
-                ),
+          if (products.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.inventory_2_outlined, size: 60, color: Colors.grey[400]),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    "No products yet",
+                    style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Add your first product to start selling",
+                    style: GoogleFonts.inter(color: Colors.grey[500], fontSize: 14),
+                  ),
+                ],
               ),
             );
           }
 
-          return SafeArea(
-            child: ListView.builder(
-              padding: const EdgeInsets.only(bottom: 80), // Space for FAB
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                return ProductCard(
-                  product: items[index],
-                  onRefresh: _loadData, // Pass refresh callback for delete/edit actions
-                );
-              },
-            ),
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: products.length,
+            separatorBuilder: (c, i) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return ProductCard(
+                product: products[index],
+                onRefresh: _loadData,
+              );
+            },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xff464646),
-        child: const Icon(Icons.add, color: Color(0xff86f4b5), size: 35),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: Colors.black,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: Text("Add Product", style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
         onPressed: () async {
-          // 1. Wait for Add Screen result
           final result = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddProductScreen()),
+            MaterialPageRoute(builder: (context) => const CreateProductScreen()),
           );
-
-          // 2. Refresh only if result is true
           if (result == true) {
             _loadData();
           }

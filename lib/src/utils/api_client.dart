@@ -1,345 +1,206 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
+import 'package:dio/dio.dart';
+import 'package:sneakerx/src/config/app_config.dart';
 import 'package:sneakerx/src/services/auth_service.dart';
 import 'package:sneakerx/src/utils/token_manager.dart';
+
+
+// Interceptors: No more manual if (status == 401) checks in every method. The interceptor handles it globally.
+// FormData: Dio handles multipart uploads much cleaner than http.
+// Automatic Retry: If the token refreshes successfully, Dio automatically replays the failed request.
 
 class ApiClient {
   // Callback to force logout if refresh fails
   static Function? onTokenExpired;
 
-  // Generic GET method
-  static Future<http.Response> get(String url) async {
-    String? token = await TokenManager.getAccessToken();
-
-    // 1. Initial Request
-    final response = await http.get(
-      Uri.parse(url),
+  // 1. Setup Dio Instance (Singleton-like)
+  static final Dio _dio = Dio(
+    BaseOptions(
+      baseUrl: AppConfig.baseUrl,
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
       headers: {
         'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
       },
-    );
+    ),
+  )..interceptors.add(_AuthInterceptor());
 
-    // 2. Check for 401 (Unauthorized)
-    if (response.statusCode == 401) {
-      return await _handleRefreshAndRetry(() => get(url));
-    }
-
-    return response;
+  // --- GENERIC METHODS ---
+  static Future<Response> get(String url) async {
+    return _dio.get(url);
   }
 
-  // Generic POST method
-  static Future<http.Response> post(String url, Map<String, dynamic> body) async {
-    String? token = await TokenManager.getAccessToken();
-
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 401) {
-      return await _handleRefreshAndRetry(() => post(url, body));
-    }
-
-    return response;
+  static Future<Response> post(String url, Map<String, dynamic> body) async {
+    return _dio.post(url, data: body);
   }
 
-  // Generic DELETE method
-  static Future<http.Response> delete(String url, Map<String, dynamic>? body) async {
-    String? token = await TokenManager.getAccessToken();
-
-    final response = await http.delete(
-      Uri.parse(url),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-      body: body != null ? jsonEncode(body) : null,
-    );
-
-    if (response.statusCode == 401) {
-      return await _handleRefreshAndRetry(() => delete(url, body));
-    }
-
-    return response;
+  static Future<Response> put(String url, Map<String, dynamic>? body) async {
+    return _dio.put(url, data: body);
   }
 
-  // Generic PUT method
-  static Future<http.Response> put(String url, Map<String, dynamic>? body) async {
-    String? token = await TokenManager.getAccessToken();
-
-    final response = await http.put(
-      Uri.parse(url),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-      body: body != null ? jsonEncode(body) : null,
-    );
-
-    if (response.statusCode == 401) {
-      // Recursively retry the PUT request after refreshing the token
-      return await _handleRefreshAndRetry(() => put(url, body));
-    }
-
-    return response;
+  static Future<Response> delete(String url, Map<String, dynamic>? body) async {
+    return _dio.delete(url, data: body);
   }
 
-  // Robust Multipart POST
-  static Future<http.Response> postMultipart({
+  // --- ROBUST MULTIPART POST ---
+  static Future<Response> postMultipart({
     required String url,
-    required Map<String, String> fields,
-    required List<File> files,
-    required String fileField,
-  }) async {
-    String? token = await TokenManager.getAccessToken();
-
-    // 1. Build the Multipart Request
-    var request = http.MultipartRequest('POST', Uri.parse(url));
-
-    // 2. Add Headers
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-
-    // 3. Add Text Fields
-    request.fields.addAll(fields);
-
-    // 4. Add Files (Create fresh streams every time this method is called)
-    for (var file in files) {
-      if (await file.exists()) {
-        request.files.add(await http.MultipartFile.fromPath(
-          fileField,
-          file.path,
-        ));
-      }
-    }
-
-    // 5. Send & Convert
-    // We convert StreamedResponse to standard Response to handle 401 easier
-    try {
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      // 6. Check for 401 and Retry
-      if (response.statusCode == 401) {
-        return await _handleRefreshAndRetry(() => postMultipart(
-          url: url,
-          fields: fields,
-          files: files, // We pass the original File objects, so retry works!
-          fileField: fileField,
-        ));
-      }
-
-      return response;
-    } catch (e) {
-      // Network errors during upload
-      throw Exception("Upload failed: $e");
-    }
-  }
-
-  // Robust Multipart POST (File is now Optional)
-  static Future<http.Response> postMultipartOneImage({
-    required String url,
-    required Map<String, String> fields,
-    File? file, // 1. Remove 'required' and make it nullable
-    required String fileField,
-  }) async {
-    String? token = await TokenManager.getAccessToken();
-
-    // 1. Build the Multipart Request
-    var request = http.MultipartRequest('POST', Uri.parse(url));
-
-    // 2. Add Headers
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-
-    // 3. Add Text Fields
-    request.fields.addAll(fields);
-
-    // 4. Add File ONLY if it is not null
-    if (file != null) {
-      request.files.add(await http.MultipartFile.fromPath(
-        fileField,
-        file.path,
-      ));
-    }
-
-    // 5. Send & Convert
-    try {
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      // 6. Check for 401 and Retry
-      if (response.statusCode == 401) {
-        return await _handleRefreshAndRetry(() => postMultipartOneImage(
-          url: url,
-          fields: fields,
-          file: file, // Pass the nullable file
-          fileField: fileField,
-        ));
-      }
-
-      return response;
-    } catch (e) {
-      throw Exception("Upload failed: $e");
-    }
-  }
-
-  // Robust Multipart POST (File is now Optional)
-  static Future<http.Response> putMultipartOneImage({
-    required String url,
-    required Map<String, String> fields,
+    Map<String, String>? fields,
+    List<File>? files,
     File? file,
     required String fileField,
   }) async {
-    String? token = await TokenManager.getAccessToken();
-
-    // 1. Build the Multipart Request
-    var request = http.MultipartRequest('PUT', Uri.parse(url));
-
-    // 2. Add Headers
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
+    // Convert generic map + files to Dio FormData
+    FormData formData = FormData();
+    if(fields != null) {
+      formData = FormData.fromMap(fields);
     }
 
-    // 3. Add Text Fields
-    request.fields.addAll(fields);
-
-    // 4. Add File ONLY if it is not null
-    if (file != null) {
-      request.files.add(await http.MultipartFile.fromPath(
+    // 1. Handle Single File (Convenience param)
+    if (file != null && await file.exists()) {
+      String fileName = file.path.split('/').last;
+      formData.files.add(MapEntry(
         fileField,
-        file.path,
+        await MultipartFile.fromFile(file.path, filename: fileName),
       ));
     }
 
-    // 5. Send & Convert
-    try {
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      // 6. Check for 401 and Retry
-      if (response.statusCode == 401) {
-        return await _handleRefreshAndRetry(() => putMultipartOneImage(
-          url: url,
-          fields: fields,
-          file: file, // Pass the nullable file
-          fileField: fileField,
-        ));
+    // 2. Handle List of Files
+    if (files != null && files.isNotEmpty) {
+      for (var f in files) {
+        if (await f.exists()) {
+          String fileName = f.path.split('/').last;
+          formData.files.add(MapEntry(
+            fileField,
+            await MultipartFile.fromFile(f.path, filename: fileName),
+          ));
+        }
       }
-
-      return response;
-    } catch (e) {
-      throw Exception("Upload failed: $e");
     }
+
+    return _dio.post(url, data: formData);
   }
 
-
-  // Robust Multipart PUT
-  static Future<http.Response> putMultipart({
+  // --- ROBUST MULTIPART PUT (List of Files) ---
+  static Future<Response> putMultipart({
     required String url,
     required Map<String, String> fields,
-    required List<File> files,
+    List<File>? files,
+    File? file,
     required String fileField,
   }) async {
-    String? token = await TokenManager.getAccessToken();
+    final formData = FormData.fromMap(fields);
 
-    // 1. Build the Multipart Request
-    var request = http.MultipartRequest('PUT', Uri.parse(url));
+    // 1. Handle Single File (Convenience param)
+    if (file != null && await file.exists()) {
+      String fileName = file.path.split('/').last;
+      formData.files.add(MapEntry(
+        fileField,
+        await MultipartFile.fromFile(file.path, filename: fileName),
+      ));
+    }
 
-    // 2. Add Headers
+    // 2. Handle List of Files
+    if (files != null && files.isNotEmpty) {
+      for (var f in files) {
+        if (await f.exists()) {
+          String fileName = f.path.split('/').last;
+          formData.files.add(MapEntry(
+            fileField,
+            await MultipartFile.fromFile(f.path, filename: fileName),
+          ));
+        }
+      }
+    }
+
+    return _dio.put(url, data: formData);
+  }
+}
+
+// --- THE INTERCEPTOR ---
+class _AuthInterceptor extends Interceptor {
+  // Lock to prevent multiple refreshes at once
+  bool _isRefreshing = false;
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    // Automatically add the token to every request
+    final token = await TokenManager.getAccessToken();
     if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
+      options.headers['Authorization'] = 'Bearer $token';
     }
-
-    // 3. Add Text Fields
-    request.fields.addAll(fields);
-
-    // 4. Add Files (Create fresh streams every time this method is called)
-    for (var file in files) {
-      if (await file.exists()) {
-        request.files.add(await http.MultipartFile.fromPath(
-          fileField,
-          file.path,
-        ));
-      }
-    }
-
-    // 5. Send & Convert
-    // We convert StreamedResponse to standard Response to handle 401 easier
-    try {
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
-      // 6. Check for 401 and Retry
-      if (response.statusCode == 401) {
-        return await _handleRefreshAndRetry(() => putMultipart(
-          url: url,
-          fields: fields,
-          files: files, // We pass the original File objects, so retry works!
-          fileField: fileField,
-        ));
-      }
-
-      return response;
-    } catch (e) {
-      // Network errors during upload
-      throw Exception("Upload failed: $e");
-    }
+    return handler.next(options);
   }
 
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    // Check if error is 401 Unauthorized
+    if (err.response?.statusCode == 401) {
 
+      // Prevent infinite loops if the refresh endpoint itself returns 401
+      if (err.requestOptions.path.contains('/auth/refresh-token')) {
+        ApiClient.onTokenExpired?.call();
+        return handler.next(err);
+      }
 
-  // --- HELPER: Handle Refresh Logic ---
-  static Future<http.Response> _handleRefreshAndRetry(Future<http.Response> Function() retryRequest) async {
-    print("AccessToken expired. Attempting refresh...");
+      if (!_isRefreshing) {
+        _isRefreshing = true;
+        try {
+          final newAccessToken = await _attemptRefreshToken();
+          if (newAccessToken != null) {
+            _isRefreshing = false;
 
-    // 1. Get Refresh Token
-    final refreshToken = await TokenManager.getRefreshToken();
-    if (refreshToken == null) {
-      _triggerLogout();
-      return http.Response('{"message": "Session expired"}', 401);
+            // Update the header of the failed request with new token
+            err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+
+            // Retry the request using the *same* Dio instance
+            final opts = Options(
+              method: err.requestOptions.method,
+              headers: err.requestOptions.headers,
+            );
+
+            final cloneReq = await ApiClient._dio.request(
+              err.requestOptions.path,
+              options: opts,
+              data: err.requestOptions.data,
+              queryParameters: err.requestOptions.queryParameters,
+            );
+
+            return handler.resolve(cloneReq);
+          }
+        } catch (e) {
+          // Refresh failed
+          _isRefreshing = false;
+        }
+      }
+
+      // If refresh failed or logic skipped, trigger logout
+      ApiClient.onTokenExpired?.call();
     }
+    return handler.next(err);
+  }
 
+  Future<String?> _attemptRefreshToken() async {
     try {
-      // 2. Call Auth Service to get new tokens
+      final refreshToken = await TokenManager.getRefreshToken();
+      if (refreshToken == null) return null;
+
+      // Use a separate/clean call for refresh to avoid interceptor loops
+      // Assuming AuthService has a method that returns the raw tokens
       final authService = AuthService();
       final apiResponse = await authService.refreshToken(refreshToken);
 
       if (apiResponse.success && apiResponse.data != null) {
-        // 3. Save new tokens
-        print("Save access token: ${apiResponse.data!.accessToken}\nSave refresh token: ${apiResponse.data!.refreshToken}");
         await TokenManager.saveTokens(
-            apiResponse.data!.accessToken,
-            apiResponse.data!.refreshToken
+          apiResponse.data!.accessToken,
+          apiResponse.data!.refreshToken,
         );
-        print("Refresh successful. Retrying original request...");
-
-        // 4. RETRY the original request (Recursive call)
-        return await retryRequest();
-      } else {
-        _triggerLogout();
-        return http.Response('{"message": "Refresh failed"}', 401);
+        return apiResponse.data!.accessToken;
       }
     } catch (e) {
-      print("Refresh Error: $e");
-      _triggerLogout();
-      return http.Response('{"message": "Session expired"}', 401);
+      print("Refresh token failed: $e");
     }
-  }
-
-  static void _triggerLogout() {
-    print("Session completely expired. Logging out.");
-    if (onTokenExpired != null) {
-      onTokenExpired!();
-    }
+    return null;
   }
 }

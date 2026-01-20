@@ -1,6 +1,5 @@
-// lib/src/models_search/filter_options.dart
 class FilterOptions {
-  int? categoryId; // Changed from List<String> selectedBrands
+  int? categoryId;
   double? minPrice;
   double? maxPrice;
 

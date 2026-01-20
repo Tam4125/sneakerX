@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_response.dart';
+import 'package:sneakerx/src/models/user.dart';
 import 'package:sneakerx/src/modules/profile/view/settings_view.dart';
 import 'package:sneakerx/src/modules/seller_signup/screens/seller_signup.dart';
 import 'package:sneakerx/src/screens/seller_main_screen.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 
 class ProfileHeader extends StatelessWidget {
-  final UserSignInResponse user;
-  const ProfileHeader({
-    super.key,
-    required this.user
-  });
+  final User user;
+  const ProfileHeader({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -20,128 +18,150 @@ class ProfileHeader extends StatelessWidget {
     return Container(
       padding: EdgeInsets.only(
         top: MediaQuery.of(context).padding.top + 10,
-        bottom: 30,
-        left: 16,
-        right: 16,
+        bottom: 60, // Extra padding for the overlapping OrderStatus bar
+        left: 20,
+        right: 20,
       ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF86F4B5), Color(0xFFC8FFDB)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
+          colors: [Color(0xFF11998e), Color(0xFF38ef7d)], // Modern Teal-Green gradient
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
         ),
       ),
       child: Column(
         children: [
-          // ... (Phần Row trên cùng giữ nguyên)
+          // Top Row: Settings & Cart
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              auth.hasShop
-              ? ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => SellerMainScreen()
-                      )
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black87,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                icon: const Icon(Icons.storefront_outlined, size: 18),
-                label: const Row(children: [Text("Xem shop", style: TextStyle(fontWeight: FontWeight.bold)), SizedBox(width: 4), Icon(Icons.chevron_right, size: 18)]),
-              )
-              : ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => SellerSignup()
-                      )
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black87,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                icon: const Icon(Icons.storefront_outlined, size: 18),
-                label: const Row(children: [Text("Bắt đầu bán", style: TextStyle(fontWeight: FontWeight.bold)), SizedBox(width: 4), Icon(Icons.chevron_right, size: 18)]),
+              IconButton(
+                icon: const Icon(Icons.settings, color: Colors.white),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsView())),
               ),
-              Row(
+              Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SettingsView()
-                        )
-                      );
-                    },
-                    icon: const Icon(Icons.settings_outlined, color: Colors.black87)
-                  ),
-                  Stack(children: [
-                    IconButton(onPressed: () {}, icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black87)),
-                    Positioned(right: 5, top: 5, child: Container(padding: const EdgeInsets.all(2), decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)), constraints: const BoxConstraints(minWidth: 16, minHeight: 16), child: const Text('53', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center))),
-                  ]),
-                  IconButton(onPressed: () {}, icon: const Icon(Icons.chat_bubble_outline, color: Colors.black87)),
+                  const Icon(Icons.shopping_cart, color: Colors.white),
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                      child: const Text('2', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  )
                 ],
               ),
+              const SizedBox(width: 10),
+              const Icon(Icons.message_outlined, color: Colors.white),
             ],
           ),
-          const SizedBox(height: 20),
 
-          // 2. THÔNG TIN NGƯỜI DÙNG
+          const SizedBox(height: 10),
+
+          // User Info Row
           Row(
             children: [
+              // Avatar with Edit Badge
               Stack(
                 children: [
                   Container(
-                    width: 70, height: 70,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      image: DecorationImage(
-                          image: NetworkImage(user.avatarUrl),
-                          fit: BoxFit.cover
-                      ),
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: CircleAvatar(
+                      radius: 35,
+                      backgroundColor: Colors.white24,
+                      backgroundImage: NetworkImage(user.avatarUrl),
                     ),
                   ),
                   Positioned(
-                    right: 0, bottom: 0,
+                    right: 0,
+                    bottom: 0,
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                      child: const Icon(Icons.edit, color: Colors.white, size: 14),
+                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                      child: const Icon(Icons.edit, size: 12, color: Color(0xFF11998e)),
                     ),
-                  ),
+                  )
                 ],
               ),
-              const SizedBox(width: 15),
-              // ... (Phần thông tin tên và follow giữ nguyên)
+              const SizedBox(width: 16),
+
+              // Name & Stats
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [Text(user.username, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 20)), const SizedBox(width: 8), Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), decoration: BoxDecoration(color: Colors.white.withOpacity(1), borderRadius: BorderRadius.circular(20)), child: const Row(children: [Text("Bạc", style: TextStyle(color: Colors.black87, fontSize: 12, fontWeight: FontWeight.bold)), Icon(Icons.chevron_right, size: 16, color: Colors.black54)]))]),
-                    const SizedBox(height: 8),
-                    const Row(children: [Text("0 Người theo dõi", style: TextStyle(color: Colors.black, fontSize: 14)), SizedBox(width: 15), Text("12 Đang theo dõi", style: TextStyle(color: Colors.black, fontSize: 14))])
+                    Text(
+                      user.fullName != null ? user.fullName! : user.username,
+                      style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        _buildTag("Silver Member"),
+                        const SizedBox(width: 8),
+                        const Text("•  12 Following", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      ],
+                    ),
                   ],
                 ),
-              )
+              ),
             ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Shop Button (Full Width)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                if (auth.hasShop) {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SellerMainScreen(initialIndex: 0)));
+                } else {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SellerSignup()));
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.white.withOpacity(0.3))),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.storefront, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                    auth.hasShop ? "Visit My Seller Store" : "Free Registration! Start Selling",
+                    style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward, color: Colors.white, size: 16),
+                ],
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTag(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(4)),
+      child: Text(text, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black)),
     );
   }
 }

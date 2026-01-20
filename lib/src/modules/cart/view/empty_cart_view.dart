@@ -9,94 +9,76 @@ class EmptyCartView extends StatelessWidget {
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF8B5FBF);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5), // Nền xám nhạt
-      appBar: AppBar(
-        title: const Text("Giỏ hàng", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 60),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 60),
 
-            // 1. ICON GIỎ HÀNG
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.shopping_cart_outlined, size: 60, color: Colors.grey[400]),
+          // 1. ICON GIỎ HÀNG
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 20),
+            child: Icon(Icons.shopping_cart_outlined, size: 60, color: Colors.grey[400]),
+          ),
+          const SizedBox(height: 20),
 
-            // 2. TEXT THÔNG BÁO
-            const Text(
-              '"Hổng" có gì trong giỏ hết',
-              style: TextStyle(fontSize: 18, color: Colors.black54, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Lướt NeakerX, lựa hàng ngay đi!',
-              style: TextStyle(fontSize: 15, color: Colors.grey),
-            ),
-            const SizedBox(height: 30),
+          // 2. TEXT THÔNG BÁO
+          const Text(
+            'Your cart is empty',
+            style: TextStyle(fontSize: 18, color: Colors.black54, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 30),
 
-            // 3. NÚT MUA SẮM NGAY (Màu Tím)
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
+          // 3. NÚT MUA SẮM NGAY (Màu Tím)
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => MainScreen(initialIndex: 0,)
+                      builder: (context) => MainScreen(initialIndex: 0,)
                   )
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                elevation: 0,
-              ),
-              child: const Text("Mua sắm ngay!", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              elevation: 0,
             ),
-            const SizedBox(height: 8),
+            child: const Text("Shop Now!", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 8),
 
-            // 4. NÚT ĐĂNG NHẬP (Viền Tím)
-            OutlinedButton(
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => SignInScreen()
-                    )
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: primaryColor),
-                padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-              ),
-              child: const Text("Đăng nhập", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+          // 4. NÚT ĐĂNG NHẬP (Viền Tím)
+          OutlinedButton(
+            onPressed: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => SignInScreen()
+                  )
+              );
+            },
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: primaryColor),
+              padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
             ),
+            child: const Text("Sign In", style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+          ),
 
-            const SizedBox(height: 50),
+          const SizedBox(height: 50),
 
-            // 5. BANNER QUÀ CHÀO MỪNG
-            _buildWelcomeBanner(),
+          // 5. BANNER QUÀ CHÀO MỪNG
+          _buildWelcomeBanner(),
 
-            const SizedBox(height: 50),
-          ],
-        ),
+          const SizedBox(height: 50),
+        ],
       ),
     );
   }

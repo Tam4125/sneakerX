@@ -1,10 +1,9 @@
 import 'dart:convert';
 
-import 'package:sneakerx/src/config/app_config.dart';
+import 'package:dio/dio.dart';
 import 'package:sneakerx/src/models/order.dart';
 import 'package:sneakerx/src/models/user.dart';
 import 'package:sneakerx/src/models/user_address.dart';
-import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_response.dart';
 import 'package:sneakerx/src/modules/profile/dtos/create_user_address_request.dart';
 import 'package:sneakerx/src/modules/profile/dtos/update_address_request.dart';
 import 'package:sneakerx/src/modules/profile/dtos/update_user_request.dart';
@@ -12,198 +11,159 @@ import 'package:sneakerx/src/utils/api_client.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
 
 class UserService {
-  static const String baseUrl = "${AppConfig.baseUrl}/users";
+  static const String _userPath = "/users";
 
-  Future<ApiResponse<UserSignInResponse>> getCurrentUser() async {
-    String url = "$baseUrl/me";
+  Future<ApiResponse<User>> getCurrentUser() async {
+    final endpoint = "$_userPath/me";
     try {
-      final response = await ApiClient.get(url);
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
+      final response = await ApiClient.get(endpoint);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return ApiResponse<UserSignInResponse>.fromJson(
-          jsonMap,
-              (data) => UserSignInResponse.fromJson(data as Map<String, dynamic>),
-        );
-      } else {
-        Map<String, dynamic> errorMap = jsonDecode(response.body);
-
-        return ApiResponse<UserSignInResponse>(
-            success: errorMap['success'] ?? false,
-            message: errorMap['message'] ?? "Sign in failed",
-            data: errorMap['data']
-        );
-      }
-    } catch (e) {
-      throw Exception("Get current user failed: $e");
-    }
-  }
-
-  Future<List<Order>?> getOrders() async {
-    String url = "$baseUrl/orders";
-    try {
-      final response = await ApiClient.get(url);
-      if (response.body.isEmpty) return [];
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final List orderList = jsonMap['data'] ?? [];
-        final orders =  orderList.map((order) {
-
-          // Safe casting ensures we don't crash if an item isn't a Map
-          return Order.fromJson(order as Map<String, dynamic>);
-        }).toList();
-
-        return orders;
-      } else {
-        throw Exception("Get current user orders failed: ${jsonMap['message']}");
-      }
-    } catch (e) {
-      throw Exception("Get current user orders failed: $e");
-    }
-  }
-
-  Future<List<UserAddress>?> getAddresses() async {
-    String url = "$baseUrl/addresses";
-    try {
-      final response = await ApiClient.get(url);
-      if (response.body.isEmpty) return [];
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final List addressList = jsonMap['data'] ?? [];
-        final addresses =  addressList.map((address) {
-
-          // Safe casting ensures we don't crash if an item isn't a Map
-          return UserAddress.fromJson(address as Map<String, dynamic>);
-        }).toList();
-
-        return addresses;
-      } else {
-        throw Exception("Get current user addresses failed: ${jsonMap['message']}");
-      }
-    } catch (e) {
-      throw Exception("Get current user addresses failed: $e");
-    }
-  }
-
-  Future<UserAddress?> createAddress(CreateUserAddressRequest request) async {
-    String url = "$baseUrl/addresses";
-    try {
-      final response = await ApiClient.post(
-        url,
-        request.toJson()
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => User.fromJson(data as Map<String, dynamic>)
       );
-
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-
-        // Parse the ApiResponse wrapper first
-        final apiResponse = ApiResponse<UserAddress>.fromJson(
-            jsonMap,
-                (data) => UserAddress.fromJson(data as Map<String, dynamic>)
-        );
-
-        return apiResponse.data;
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Error create user address");
-      }
-    } catch (e) {
-      throw Exception("Error create user address: $e");
+    } on DioException catch (e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Get current user failed",
+          data: null
+      );
     }
   }
 
-  Future<UserAddress?> updateAddress(UpdateAddressRequest request) async {
-    String url = "$baseUrl/addresses/${request.addressId}";
+  Future<ApiResponse<User>> updateUserDetail(UpdateUserRequest request) async {
+    final endpoint = "$_userPath/me";
+
+    print("UPDATE USER REQUEST???: ${request.toJson()}");
     try {
       final response = await ApiClient.put(
-        url,
+        endpoint,
         request.toJson()
       );
 
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
+      print("UPDATE USER RESPONSE???: ${response.data}");
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => User.fromJson(data as Map<String, dynamic>)
+      );
+    } on DioException catch (e) {
 
-        // Parse the ApiResponse wrapper first
-        final apiResponse = ApiResponse<UserAddress>.fromJson(
-            jsonMap,
-                (data) => UserAddress.fromJson(data as Map<String, dynamic>)
-        );
-
-        return apiResponse.data;
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Error update user address");
-      }
-    } catch (e) {
-      throw Exception("Error update user address: $e");
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Update user failed",
+          data: null
+      );
     }
   }
 
-  Future<User?> getUserDetail() async {
-    String url = "$baseUrl/me/detail";
+  Future<ApiResponse<List<UserAddress>>> getAddresses() async {
+    final endpoint = "$_userPath/addresses";
     try {
-      final response = await ApiClient.get(url);
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
+      final response = await ApiClient.get(endpoint);
 
-      if(response.statusCode == 200 || response.statusCode == 201) {
-        final apiResponse = ApiResponse<User>.fromJson(
-            jsonMap,
-                (data) => User.fromJson(data as Map<String, dynamic>)
-        );
-
-        return apiResponse.data;
-
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Error update user");
-      }
-    } catch (e) {
-      throw Exception("Get user detail failed: $e");
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => (data as List<dynamic>?)
+              ?.map((ele) => UserAddress.fromJson(ele as Map<String, dynamic>))
+              .toList() ?? []
+      );
+    } on DioException catch (e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Get current user addresses failed",
+          data: null
+      );
     }
   }
 
-  Future<User?> updateUserDetail(UpdateUserRequest request) async {
-    final url = "$baseUrl/${request.userId}";
-    // 1. Prepare Fields Map
-    Map<String, String> fields = {
-      'userId': request.userId.toString(),
-      'username': request.username,
-      'fullName': request.fullName,
-      'email': request.email,
-      'phone': request.phone,
-      'status': request.status.name,
-    };
+  Future<ApiResponse<UserAddress>> createAddress(CreateUserAddressRequest request) async {
+    final endpoint = "$_userPath/addresses";
+    print("CREATE USER ADDRESS REQUEST???: ${request.toJson()}");
+    try {
+      final response = await ApiClient.post(
+        endpoint,
+        request.toJson()
+      );
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => UserAddress.fromJson(data as Map<String, dynamic>)
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Create user address failed",
+          data: null
+      );
+    }
+  }
+
+  Future<ApiResponse<UserAddress>> updateAddress(UpdateAddressRequest request) async {
+    final endpoint = "$_userPath/addresses/${request.addressId}";
+    print("UPDATE USER ADDRESS REQUEST???: ${request.toJson()}");
 
     try {
-      final response = await ApiClient.putMultipartOneImage(
-          url: url,
-          fields: fields,
-          file: request.avatar,
-          fileField: "avatar"
+      final response = await ApiClient.put(
+        endpoint,
+        request.toJson()
       );
 
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-      if(response.statusCode == 200 || response.statusCode == 201) {
-        final apiResponse = ApiResponse<User>.fromJson(
-            jsonMap,
-                (data) => User.fromJson(data as Map<String, dynamic>)
-        );
-
-        return apiResponse.data;
-
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Error update user");
-      }
-    } catch (e) {
-      throw Exception("Update user service error: $e");
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => UserAddress.fromJson(data as Map<String, dynamic>)
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Update user address failed",
+          data: null
+      );
     }
   }
 
+  Future<ApiResponse<String>> deleteAddress(int addressId) async {
+    final endpoint = "$_userPath/addresses/$addressId";
+
+    try {
+      final response = await ApiClient.delete(
+        endpoint,
+        null
+      );
+
+      return ApiResponse(
+        success: true,
+        message: response.data['message'],
+        data: response.data['data']
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] ?? "Service Error: Delete user address failed",
+        data: null
+      );
+    }
+  }
+
+  Future<ApiResponse<List<Order>>> getOrders() async {
+    String url = "$_userPath/orders";
+    try {
+      final response = await ApiClient.get(url);
+
+      print("GET USER ORDERS RESPONSE???: ${response.data}");
+
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => (data as List?)
+            ?.map((ele) => Order.fromJson(ele as Map<String, dynamic>))
+          .toList() ?? []
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] ?? "Service Error: Get current user orders failed",
+        data: null
+      );
+    }
+  }
 
 }

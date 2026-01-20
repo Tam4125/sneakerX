@@ -1,40 +1,43 @@
-import 'package:sneakerx/src/models/enums/order_status.dart';
-import 'package:sneakerx/src/models/order_item.dart';
+import 'package:sneakerx/src/models/custom/address_snapshot.dart';
+import 'package:sneakerx/src/models/enums/payment_status.dart';
 import 'package:sneakerx/src/models/payment.dart';
+import 'package:sneakerx/src/models/shop_order.dart';
 
 class Order {
   final int orderId;
   final int userId;
-  final int addressId;
-  final double totalPrice;
-  final double shippingFee;
-  final OrderStatus orderStatus;
-  final List<OrderItem> orderItems;
-  final Payment payment;
+  final List<Payment> payments;
+  final AddressSnapshot shippingAddress;
+  final double totalAmount;
+  final PaymentStatus paymentStatus;
+  final DateTime createdAt;
+  final List<ShopOrder> shopOrders;
 
   Order({
     required this.orderId,
     required this.userId,
-    required this.addressId,
-    required this.totalPrice,
-    required this.shippingFee,
-    required this.orderStatus,
-    required this.orderItems,
-    required this.payment,
+    required this.payments,
+    required this.shippingAddress,
+    required this.totalAmount,
+    required this.paymentStatus,
+    required this.createdAt,
+    required this.shopOrders,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
       orderId: json['orderId'],
       userId: json['userId'],
-      addressId: json['addressId'],
-      totalPrice: json['totalPrice'],
-      shippingFee: json['shippingFee'],
-      orderStatus: OrderStatus.values.byName(json['orderStatus']),
-      orderItems: (json['orderItems'] as List?)
-        ?.map((orderItem) => OrderItem.fromJson(orderItem)).toList()
-        ?? [],
-      payment: Payment.fromJson(json['payment'])
+      payments: (json['payments'] as List?)
+        ?.map((ele) => Payment.fromJson(ele as Map<String, dynamic>))
+        .toList() ?? [],
+      shippingAddress: AddressSnapshot.fromJson(json['shippingAddress']),
+      totalAmount: json['totalAmount'],
+      paymentStatus: PaymentStatus.values.byName(json['paymentStatus']),
+      createdAt: DateTime.parse(json['createdAt']),
+      shopOrders: (json['shopOrders'] as List?)
+        ?.map((ele) => ShopOrder.fromJson(ele as Map<String, dynamic>))
+        .toList() ?? [],
     );
   }
 }

@@ -5,6 +5,7 @@ class CreateUserAddressRequest {
   final String district;
   final String ward;
   final String addressLine;
+  final bool isDefault;
 
   CreateUserAddressRequest({
     required this.recipientName,
@@ -13,6 +14,7 @@ class CreateUserAddressRequest {
     required this.district,
     required this.ward,
     required this.addressLine,
+    required this.isDefault,
   });
 
   Map<String, dynamic> toJson() {
@@ -22,7 +24,8 @@ class CreateUserAddressRequest {
       'provinceOrCity': provinceOrCity,
       'district': district,
       'ward': ward,
-      'addressLine': addressLine
+      'addressLine': addressLine,
+      'isDefault': isDefault,
     };
   }
 }

@@ -1,19 +1,18 @@
 import 'package:sneakerx/src/models/enums/order_status.dart';
 
-class UpdateOrderStatusRequest {
+class UpdateShopOrderRequest {
+  final int shopOrderId;
   final OrderStatus orderStatus;
-  final int orderId;
 
-  UpdateOrderStatusRequest({
+  UpdateShopOrderRequest({
+    required this.shopOrderId,
     required this.orderStatus,
-    required this.orderId,
   });
 
   Map<String, dynamic> toJson() {
     return {
+      'shopOrderId': shopOrderId,
       'orderStatus': orderStatus.name,
-      'orderId': orderId
     };
   }
-
 }

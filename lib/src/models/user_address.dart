@@ -7,6 +7,7 @@ class UserAddress {
   final String district;
   final String ward;
   final String addressLine;
+  final bool isDefault;
 
   UserAddress({
     required this.addressId,
@@ -16,7 +17,8 @@ class UserAddress {
     required this.provinceOrCity,
     required this.district,
     required this.ward,
-    required this.addressLine
+    required this.addressLine,
+    required this.isDefault,
   });
 
   factory UserAddress.fromJson(Map<String, dynamic> json) {
@@ -28,7 +30,8 @@ class UserAddress {
       provinceOrCity: json['provinceOrCity'],
       district: json['district'],
       ward: json['ward'],
-      addressLine: json['addressLine']
+      addressLine: json['addressLine'],
+      isDefault: json['isDefault']
     );
   }
 }

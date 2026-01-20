@@ -1,267 +1,557 @@
-import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:sneakerx/src/config/app_config.dart';
-import 'package:sneakerx/src/models/product.dart';
+import 'package:sneakerx/src/global_widgets/global_snackbar.dart';
+import 'package:sneakerx/src/models/category.dart';
+import 'package:sneakerx/src/models/product_attribute.dart';
+import 'package:sneakerx/src/modules/seller_product/models/create_attribute_request.dart';
+import 'package:sneakerx/src/modules/seller_product/models/create_attribute_value_request.dart';
 import 'package:sneakerx/src/modules/seller_product/models/create_product_model.dart';
-import 'package:sneakerx/src/modules/seller_product/models/create_variant_model.dart';
+import 'package:sneakerx/src/modules/seller_product/models/create_sku_request.dart';
+import 'package:sneakerx/src/modules/seller_product/models/update_product_request.dart'; // Make sure this exists
+import 'package:sneakerx/src/services/category_service.dart';
+import 'package:sneakerx/src/services/media_service.dart';
+import 'package:sneakerx/src/services/product_service.dart';
 import 'package:sneakerx/src/services/shop_service.dart';
 import 'package:sneakerx/src/utils/auth_provider.dart';
 
-
-// --- HELPER CLASS TO MANAGE UI STATE FOR EACH VARIANT ---
-class VariantFormItem {
-  String type; // "SIZE" or "COLOR"
-  String? selectedValue; // "42" or "0xFFFF0000"
-  TextEditingController priceCtrl = TextEditingController();
-  TextEditingController stockCtrl = TextEditingController();
-
-  VariantFormItem({
-    this.type = "SIZE",
-    this.selectedValue,
-  });
-}
-
-class AddProductScreen extends StatefulWidget {
-  const AddProductScreen({Key? key}) : super(key: key);
+class CreateProductScreen extends StatefulWidget {
+  const CreateProductScreen({super.key});
 
   @override
-  State<AddProductScreen> createState() => _AddProductScreen();
+  State<CreateProductScreen> createState() => _CreateProductScreenState();
 }
 
-class _AddProductScreen extends State<AddProductScreen> {
+class _CreateProductScreenState extends State<CreateProductScreen> {
+  final ProductService _productService = ProductService();
   final ShopService _shopService = ShopService();
-  final AppConfig _appConfig = AppConfig();
+  final CategoryService _categoryService = CategoryService();
+  final MediaService _mediaService = MediaService();
+  final ImagePicker _picker = ImagePicker();
   final _formKey = GlobalKey<FormState>();
 
-  // Basic Product Controllers
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  // --- CONTROLLERS ---
+  final TextEditingController _nameCtrl = TextEditingController();
+  final TextEditingController _descCtrl = TextEditingController();
+  final TextEditingController _basePriceCtrl = TextEditingController();
+  final TextEditingController _stockCtrl = TextEditingController();
 
-  // State
-  int? _selectedCategoryId;
-  String _selectedStatus = 'ACTIVE';
-  List<MediaItem> _mediaItems = [];
-  final ImagePicker _picker = ImagePicker();
-  bool _isLoading = false;
+  // --- STATE ---
+  final List<File> _localImages = [];
+  bool _hasVariants = false;
+  bool _isUploading = false;
+  String _statusMessage = "Publish Product";
 
-  // --- DYNAMIC VARIANTS STATE ---
-  // Start with 1 empty variant
-  List<VariantFormItem> _variantItems = [VariantFormItem()];
+  List<ProductCategory> _categories = [];
+  List<ProductAttribute> _commonAttributes = [];
+
+  int? _selectedCategoryId; // If null, check the text controller of autocomplete
+  String? _selectedCategoryName;
+
+  // --- DRAFT DATA FOR UI ---
+  final List<DraftAttribute> _draftAttributes = [];
+  List<DraftSku> _generatedSkus = [];
+
 
   @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    // Dispose all dynamic controllers
-    for (var v in _variantItems) {
-      v.priceCtrl.dispose();
-      v.stockCtrl.dispose();
-    }
-    super.dispose();
+  void initState() {
+    super.initState();
+
+    _loadData();
   }
 
-  // --- MEDIA PICKER LOGIC  ---
-  Future<void> _pickMedia(String type) async {
+  Future<void> _loadData() async {
     try {
-      if (type == 'image') {
-        final XFile? image = await _picker.pickImage(
-          source: ImageSource.gallery,
-          imageQuality: 80,
-        );
-        if (image != null) {
-          setState(() {
-            _mediaItems.add(MediaItem(
-              file: File(image.path),
-              type: 'image',
-              path: image.path,
-            ));
-          });
-        }
+      final response = await _categoryService.getCategories();
+      if(!response.success && response.data == null) {
+        GlobalSnackbar.show(context, success: false, message: response.message);
+        return;
       }
-    } catch (e) {
-      _showMessage('Error picking media: $e');
+
+      _categories = response.data!;
+    } catch(e) {
+      GlobalSnackbar.show(context, success: false, message: "Service Error: Get popular categories failed {$e}");
+    }
+
+    try {
+      final response = await _productService.fetchPopularAttributes();
+      if(!response.success && response.data == null) {
+        GlobalSnackbar.show(context, success: false, message: response.message);
+        return;
+      }
+
+      _commonAttributes = response.data!;
+    } catch(e) {
+      GlobalSnackbar.show(context, success: false, message: "Service Error: Get popular attributes failed {$e}");
     }
   }
 
-  // --- ACTIONS ---
+  // --- 1. IMAGE PICKERS ---
+  Future<void> _pickMainImages() async {
+    final List<XFile> images = await _picker.pickMultiImage();
+    if (images.isNotEmpty) {
+      setState(() => _localImages.addAll(images.map((x) => File(x.path))));
+    }
+  }
 
-  void _addVariant() {
+  Future<void> _pickValueImage(DraftValue val) async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() => val.localFile = File(image.path));
+    }
+  }
+
+  // --- 2. SKU LOGIC ---
+  void _generateSkus() {
+    if (_draftAttributes.isEmpty) {
+      setState(() => _generatedSkus = []);
+      return;
+    }
+    List<List<DraftValue>> input = _draftAttributes
+        .map((attr) => attr.values)
+        .where((vals) => vals.isNotEmpty)
+        .toList();
+
+    if (input.isEmpty) return;
+
+    List<Map<String, String>> combinations = _cartesian(input);
+
     setState(() {
-      _variantItems.add(VariantFormItem());
+      _generatedSkus = combinations.map((combo) {
+        String code = combo.values.join("-").toUpperCase();
+        return DraftSku()
+          ..code = code
+          ..specs = combo
+          ..price = double.tryParse(_basePriceCtrl.text) ?? 0
+          ..stock = 0;
+      }).toList();
     });
   }
 
-  void _removeVariant(int index) {
-    if (_variantItems.length > 1) {
-      setState(() {
-        _variantItems.removeAt(index);
-      });
-    } else {
-      _showMessage("Phải có ít nhất 1 biến thể");
+  List<Map<String, String>> _cartesian(List<List<DraftValue>> input, [int index = 0, Map<String, String>? current]) {
+    current ??= {};
+    List<Map<String, String>> result = [];
+    if (index == input.length) {
+      result.add(Map.from(current));
+      return result;
     }
+    String attrName = _draftAttributes[index].name;
+    for (var val in input[index]) {
+      current[attrName] = val.value;
+      result.addAll(_cartesian(input, index + 1, current));
+    }
+    return result;
   }
 
-  Future<void> _saveProduct() async {
+  // --- 3. SUBMIT FLOW (The 3-Step Process) ---
+  Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
-
-    // Validate Variants manually (ensure values are picked)
-    for (int i = 0; i < _variantItems.length; i++) {
-      if (_variantItems[i].selectedValue == null) {
-        _showMessage("Vui lòng chọn giá trị cho biến thể #${i + 1}");
-        return;
-      }
+    if (_selectedCategoryId == null) {
+      GlobalSnackbar.show(context, success: false, message: "Please select or type a category");
+      return;
     }
-
-    if (_mediaItems.isEmpty) {
-      _showMessage('Vui lòng thêm ít nhất 1 hình ảnh');
+    if (_localImages.isEmpty) {
+      GlobalSnackbar.show(context, success: false, message: "Please add at least 1 image");
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isUploading = true;
+      _statusMessage = "Creating Product...";
+    });
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final int shopId = auth.shopId!;
 
     try {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final token = auth.token;
-      if (token == null) throw Exception("Chưa đăng nhập");
+      // --- STEP 1: CREATE SHELL PRODUCT (To get ID) ---
+      // We send ONLY basic info. No attributes, no SKUs yet.
+      final createRequest = CreateProductRequest(
+        name: _nameCtrl.text,
+        description: _descCtrl.text,
+        basePrice: double.parse(_basePriceCtrl.text),
+        shopId: shopId,
+        categoryId: _selectedCategoryId!,
+        // Logic: if category exists in DB, backend finds it by name. If not, creates new.
+        imageUrls: [],
+        attributes: [],
+        skus: [],
+      );
 
-      // 1. Convert UI Items to DTOs
-      List<CreateVariantRequest> variantDtos = _variantItems.map((item) {
-        return CreateVariantRequest(
-          variantType: item.type, // "SIZE" or "COLOR"
-          variantValue: item.selectedValue!, // "42" or "0xFF..."
-          price: double.parse(item.priceCtrl.text),
-          stock: int.parse(item.stockCtrl.text),
+      final createRes = await _shopService.createProduct(createRequest);
+      if (!createRes.success || createRes.data == null) {
+        GlobalSnackbar.show(context, success: false, message: createRes.message);
+      }
+      final newProduct = createRes.data!;
+      final productId = newProduct.product.productId; // Assuming DTO has this
+
+      // --- STEP 2: UPLOAD MEDIA ---
+      setState(() => _statusMessage = "Uploading Images...");
+
+      // A. Main Images
+      List<String> uploadedMainUrls = [];
+      if (_localImages.isNotEmpty) {
+        final uploadRes = await _mediaService.uploadProductMedia(_localImages, shopId, productId);
+        if (uploadRes.success && uploadRes.data != null) {
+          uploadedMainUrls = uploadRes.data!;
+        }
+      }
+
+      // B. Attribute Images
+      for (var attr in _draftAttributes) {
+        for (var val in attr.values) {
+          if (val.localFile != null) {
+            final valUpRes = await _mediaService.uploadProductMedia([val.localFile!], shopId, productId);
+            if (valUpRes.success && valUpRes.data!.isNotEmpty) {
+              val.uploadedUrl = valUpRes.data!.first;
+            }
+          }
+        }
+      }
+
+      // --- STEP 3: UPDATE PRODUCT WITH FULL DATA ---
+      setState(() => _statusMessage = "Finalizing...");
+
+      // Prepare SKUs
+      List<CreateSkuRequest> skuRequests = _generatedSkus.map((dSku) {
+        return CreateSkuRequest(
+          skuCode: "${_nameCtrl.text.substring(0, 3).toUpperCase()}-${dSku.code}",
+          price: dSku.price,
+          stock: dSku.stock,
+          specifications: dSku.specs,
         );
       }).toList();
 
-      List<File> imageFiles = _mediaItems.map((m) => m.file).toList();
+      if (!_hasVariants) {
+        skuRequests.add(CreateSkuRequest(
+          skuCode: "${_nameCtrl.text.substring(0, 3).toUpperCase()}-DEFAULT",
+          price: double.parse(_basePriceCtrl.text),
+          stock: int.tryParse(_stockCtrl.text) ?? 0,
+          specifications: {},
+        ));
+      }
 
-      if(!auth.hasShop) throw Exception("Chưa tạo shop");
-      final int shopId = auth.shopId!;
-      // 2. Call Service
-      final request = CreateProductRequest(
+      // Prepare Attributes
+      List<CreateAttributeRequest> attrRequests = _draftAttributes.map((a) => CreateAttributeRequest(
+          name: a.name,
+          values: a.values.map((v) => CreateAttributeValueRequest(
+              value: v.value,
+              imageUrl: v.uploadedUrl
+          )).toList()
+      )).toList();
+
+      // Construct Update Request
+      // NOTE: We use the `new` fields in UpdateProductRequest to ADD these
+      final updateRequest = UpdateProductRequest(
+        productId: productId,
+        name: _nameCtrl.text,
+        description: _descCtrl.text,
+        basePrice: double.parse(_basePriceCtrl.text),
         shopId: shopId,
-        name: _nameController.text,
-        description: _descriptionController.text,
-        status: _selectedStatus,
         categoryId: _selectedCategoryId!,
-        variants: variantDtos, // Send as a list
-        images: imageFiles,
+        newImageUrls: uploadedMainUrls, // Add images
+        newAttributes: attrRequests,    // Add attributes
+        newSkus: skuRequests, // Add SKUs
+        keepImages: [],
+        keepAttributesKeepValues: {},
+        keepAttributesNewValues: {},
+        existingSkus: [],
       );
 
-      Product? newProduct = await _shopService.createProduct(request);
+      final updateRes = await _shopService.updateProduct(updateRequest);
 
-      if (mounted) {
-        _showMessage('Thêm sản phẩm thành công!');
-        Navigator.pop(context, true);
+      if (updateRes.success) {
+        GlobalSnackbar.show(context, success: true, message: "Product Published Successfully!");
+        if (mounted) Navigator.pop(context, true);
+      } else {
+        GlobalSnackbar.show(context, success: false, message: updateRes.message);
       }
+
     } catch (e) {
-      _showMessage(e.toString().replaceAll("Exception: ", ""));
+      GlobalSnackbar.show(context, success: false, message: "Error: $e");
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() { _isUploading = false; _statusMessage = "Publish Product"; });
     }
   }
-
-  // --- UI BUILD ---
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB), // Light grey background
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text('Thêm Sản Phẩm', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.black)),
+        title: Text("Add New Product", style: GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
         leading: const BackButton(color: Colors.black),
-        actions: [
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator(color: Colors.black,))
-          else
-            IconButton(icon: const Icon(Icons.check, color: Colors.blue), onPressed: _saveProduct),
-        ],
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: const Offset(0,-2))]),
+        child: ElevatedButton(
+          onPressed: _isUploading ? null : _handleSubmit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.black,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: _isUploading
+              ? Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+            const SizedBox(width: 10),
+            Text(_statusMessage, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+          ])
+              : Text(_statusMessage, style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
       ),
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _buildSectionTitle("Hình ảnh"),
-            _buildMediaSection(),
-            const SizedBox(height: 24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- 1. BASIC INFO ---
+              _buildSectionHeader("Basic Information"),
+              _buildTextField("Product Name", _nameCtrl, hint: "e.g. Nike Air Jordan"),
+              const SizedBox(height: 16),
 
-            _buildSectionTitle("Thông tin chung"),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-              child: Column(
+              // Category Autocomplete
+              _buildLabel("Category"),
+              LayoutBuilder(
+                builder: (context, constraints) => Autocomplete<ProductCategory>(
+                  optionsBuilder: (textEditingValue) {
+
+                    if (textEditingValue.text == '') return _categories;
+                    return _categories.where((ProductCategory option) {
+                      return option.name.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                    });
+                  },
+                  // 2. Display Name in list
+                  displayStringForOption: (ProductCategory option) => option.name,
+
+                  // 3. Handle Selection
+                  onSelected: (ProductCategory selection) {
+                    setState(() {
+                      _selectedCategoryId = selection.categoryId;
+                      _selectedCategoryName = selection.name;
+                    });
+                  },
+                  fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                    return TextFormField(
+                      controller: textEditingController,
+                      focusNode: focusNode,
+                      decoration: _inputDecoration(hint: "Search existing category..."),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Category is required";
+                        }
+
+                        // STRICT CHECK: Input must match an existing category name
+                        final exists = _categories.any(
+                                (c) => c.name.toLowerCase() == value.toLowerCase()
+                        );
+
+                        if (!exists) {
+                          return "Please select a valid category from the list";
+                        }
+                        return null;
+                      },
+                      onChanged: (val) {
+                        // Reset ID when typing; we will resolve it on submit or selection
+                        _selectedCategoryId = null; // Reset ID if user types new name
+                        _selectedCategoryName = val;
+                      },
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 16),
+              _buildTextField("Description", _descCtrl, maxLines: 3, hint: "Describe your product..."),
+
+              const SizedBox(height: 24),
+
+              // --- 2. IMAGES ---
+              _buildSectionHeader("Product Images"),
+              Container(
+                height: 110,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    GestureDetector(
+                      onTap: _pickMainImages,
+                      child: Container(
+                        width: 100,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey[300]!, width: 1.5, style: BorderStyle.solid),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.add_photo_alternate_outlined, size: 30, color: Colors.grey),
+                            const SizedBox(height: 4),
+                            Text("Add Photo", style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]))
+                          ],
+                        ),
+                      ),
+                    ),
+                    ..._localImages.map((file) => Stack(
+                      children: [
+                        Container(
+                          width: 100,
+                          margin: const EdgeInsets.only(right: 12),
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              image: DecorationImage(image: FileImage(file), fit: BoxFit.cover),
+                              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0,2))]
+                          ),
+                        ),
+                        Positioned(
+                          top: 4, right: 16,
+                          child: GestureDetector(
+                            onTap: () => setState(() => _localImages.remove(file)),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                              child: const Icon(Icons.close, size: 12, color: Colors.white),
+                            ),
+                          ),
+                        )
+                      ],
+                    ))
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // --- 3. PRICING & VARIANTS ---
+              _buildSectionHeader("Pricing & Inventory"),
+              Row(
                 children: [
-                  _buildTextField(_nameController, "Tên sản phẩm"),
-                  const SizedBox(height: 12),
-                  _buildTextField(_descriptionController, "Mô tả", maxLines: 3),
-                  const SizedBox(height: 12),
-                  _buildCategoryDropdown(),
-                  const SizedBox(height: 12),
-                  _buildStatusDropdown(),
+                  Expanded(child: _buildTextField("Base Price", _basePriceCtrl, isNumber: true, prefix: "\$")),
+                  // const SizedBox(width: 16),
+                  // Expanded(child: _buildTextField("Stock", _stockCtrl, isNumber: true, enabled: !_hasVariants)),
                 ],
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[200]!)),
+                child: SwitchListTile(
+                  title: Text("This product has variants", style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  subtitle: const Text("Size, Color, Material...", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  value: _hasVariants,
+                  activeColor: Colors.black,
+                  onChanged: (val) {
+                    setState(() => _hasVariants = val);
+                    if (val) _generateSkus();
+                  },
+                ),
+              ),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSectionTitle("Biến thể & Giá"),
-                TextButton.icon(
-                  onPressed: _addVariant,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text("Thêm biến thể"),
-                )
+              if (_hasVariants) ...[
+                const SizedBox(height: 24),
+                _buildSectionHeader("Attributes"),
+                ..._draftAttributes.asMap().entries.map((e) => _buildAttributeCard(e.key, e.value)).toList(),
+
+                const SizedBox(height: 12),
+                Center(
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.add_circle_outline, color: Colors.black),
+                    label: const Text("Add Attribute", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                    onPressed: () => setState(() => _draftAttributes.add(DraftAttribute())),
+                  ),
+                ),
+
+                if (_generatedSkus.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  _buildSectionHeader("Variants Setup"),
+                  Container(
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!)
+                    ),
+                    child: Column(
+                      children: _generatedSkus.map((sku) => _buildSkuRow(sku)).toList(),
+                    ),
+                  ),
+                ]
               ],
-            ),
 
-            // --- DYNAMIC VARIANT LIST ---
-            ..._variantItems.asMap().entries.map((entry) {
-              int idx = entry.key;
-              VariantFormItem item = entry.value;
-              return _buildVariantCard(item, idx);
-            }).toList(),
-
-            const SizedBox(height: 40),
-          ],
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // --- VARIANT WIDGETS ---
+  // --- WIDGETS ---
 
-  Widget _buildStatusDropdown() {
-    return DropdownButtonFormField<String>(
-      value: _selectedStatus,
-      decoration: InputDecoration(
-        labelText: 'Trạng thái',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      items: const [
-        DropdownMenuItem(value: 'ACTIVE', child: Text("Đang bán")),
-        DropdownMenuItem(value: 'HIDDEN', child: Text("Ẩn")),
-      ],
-      onChanged: (v) => setState(() => _selectedStatus = v!),
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
     );
   }
 
-  Widget _buildVariantCard(VariantFormItem item, int index) {
+  Widget _buildLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6, left: 2),
+      child: Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.grey[700])),
+    );
+  }
+
+  InputDecoration _inputDecoration({String? hint, String? prefix}) {
+    return InputDecoration(
+      hintText: hint,
+      prefixText: prefix,
+      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black, width: 1.5)),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController ctrl, {bool isNumber = false, int maxLines = 1, bool enabled = true, String? hint, String? prefix}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(label),
+        TextFormField(
+          controller: ctrl,
+          keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+          maxLines: maxLines,
+          enabled: enabled,
+          validator: (v) => (v == null || v.isEmpty) ? "Required" : null,
+          decoration: _inputDecoration(hint: hint, prefix: prefix).copyWith(
+            fillColor: enabled ? Colors.white : Colors.grey[100],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAttributeCard(int index, DraftAttribute attr) {
+    TextEditingController valCtrl = TextEditingController();
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 5, offset: const Offset(0,2))]
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,258 +559,177 @@ class _AddProductScreen extends State<AddProductScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Biến thể #${index + 1}", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.grey[700])),
-              if (_variantItems.length > 1)
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: () => _removeVariant(index),
-                  constraints: const BoxConstraints(),
-                  padding: EdgeInsets.zero,
-                ),
+              Text("Attribute #${index + 1}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _draftAttributes.removeAt(index);
+                    _generateSkus();
+                  });
+                },
+                child: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+              )
             ],
           ),
-          const Divider(),
           const SizedBox(height: 8),
 
-          // Row 1: Type & Value
-          Row(
-            children: [
-              // 1. Type Dropdown (Size vs Color)
-              Expanded(
-                flex: 2,
-                child: DropdownButtonFormField<String>(
-                  value: item.type,
-                  decoration: _inputDecoration("Loại"),
-                  items: const [
-                    DropdownMenuItem(value: "SIZE", child: Text("Size")),
-                    DropdownMenuItem(value: "COLOR", child: Text("Màu sắc")),
-                  ],
-                  onChanged: (val) {
-                    setState(() {
-                      item.type = val!;
-                      item.selectedValue = null; // Reset value when type changes
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // 2. Value Dropdown (Dynamic based on Type)
-              Expanded(
-                flex: 3,
-                child: item.type == "SIZE"
-                    ? _buildSizeDropdown(item)
-                    : _buildColorDropdown(item),
-              ),
-            ],
+          // Attribute Name Autocomplete
+          LayoutBuilder(
+            builder: (context, constraints) => Autocomplete<ProductAttribute>(
+              optionsBuilder: (textEditingValue) {
+                if (textEditingValue.text == '') return _commonAttributes;
+                return _commonAttributes.where((option) {
+                  return option.name.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                });
+              },
+              displayStringForOption: (option) => option.name,
+              onSelected: (selection) {
+                // If they select an existing attribute, we just use the name for now
+                // (Backend handles matching by name string)
+                attr.name = selection.name;
+              },
+              fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                if (attr.name.isNotEmpty && textEditingController.text.isEmpty) {
+                  textEditingController.text = attr.name;
+                }
+                return TextFormField(
+                  controller: textEditingController,
+                  focusNode: focusNode,
+                  decoration: _inputDecoration(hint: "Name (e.g. Size, Color)"),
+                  onChanged: (val) => attr.name = val,
+                );
+              },
+            ),
           ),
+
           const SizedBox(height: 12),
-
-          // Row 2: Price & Stock
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: item.priceCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: _inputDecoration("Giá", suffix: "đ"),
-                  validator: (v) => (v == null || v.isEmpty) ? "Nhập giá" : null,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: item.stockCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: _inputDecoration("Kho"),
-                  validator: (v) => (v == null || v.isEmpty) ? "Nhập kho" : null,
-                ),
-              ),
-            ],
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: attr.values.map((v) => Chip(
+              label: Text(v.value),
+              backgroundColor: Colors.grey[100],
+              avatar: v.localFile != null
+                  ? CircleAvatar(backgroundImage: FileImage(v.localFile!))
+                  : null,
+              deleteIcon: const Icon(Icons.close, size: 14),
+              onDeleted: () {
+                setState(() {
+                  attr.values.remove(v);
+                  _generateSkus();
+                });
+              },
+            )).toList(),
           ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: valCtrl,
+                decoration: _inputDecoration(hint: "Add Value (e.g. XL)"),
+                onSubmitted: (_) {
+                  if(valCtrl.text.isNotEmpty) {
+                    setState(() {
+                      attr.values.add(DraftValue()..value = valCtrl.text);
+                      _generateSkus();
+                    });
+                    valCtrl.clear();
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: () {
+                if(attr.values.isNotEmpty) _pickValueImage(attr.values.last);
+                else {
+                  GlobalSnackbar.show(context, success: false, message: "Add a value first!");
+                }
+              },
+              icon: const Icon(Icons.add_photo_alternate_outlined),
+              tooltip: "Add image to last value",
+            ),
+            IconButton(
+              onPressed: () {
+                if(valCtrl.text.isNotEmpty) {
+                  setState(() {
+                    attr.values.add(DraftValue()..value = valCtrl.text);
+                    _generateSkus();
+                  });
+                  valCtrl.clear();
+                }
+              },
+              icon: const Icon(Icons.check_circle, color: Colors.black),
+            )
+          ])
         ],
       ),
     );
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.grey[800],
-      ),
-    );
-  }
-
-  Widget _buildTextField(TextEditingController ctrl, String label, {int maxLines = 1, bool isNumber = false, String? suffix}) {
-    return TextFormField(
-      controller: ctrl,
-      maxLines: maxLines,
-      keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
-      decoration: _inputDecoration(label, suffix: suffix),
-      validator: (val) => (val == null || val.isEmpty) ? 'Bắt buộc' : null,
-    );
-  }
-
-  Widget _buildMediaSection() {
-    return Column(
-      children: [
-        const SizedBox(height: 16),
-        Text('Thêm hình ảnh', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey[700])),
-        const SizedBox(height: 16),
-
-        // Horizontal Scroll List
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _mediaItems.length + 1, // +1 for the "Add" button
-            itemBuilder: (ctx, index) {
-              if (index == _mediaItems.length) {
-                // Add Button
-                return GestureDetector(
-                  onTap: () => _pickMedia('image'),
-                  child: Container(
-                    width: 100,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.add_a_photo, color: Colors.grey),
-                        SizedBox(height: 4),
-                        Text("Thêm", style: TextStyle(color: Colors.grey, fontSize: 12))
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              // Image Item
-              final item = _mediaItems[index];
-              return Stack(
-                children: [
-                  Container(
-                    width: 100,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(item.file, fit: BoxFit.cover),
-                    ),
-                  ),
-                  Positioned(
-                    top: 4, right: 12,
-                    child: GestureDetector(
-                      onTap: () => setState(() => _mediaItems.removeAt(index)),
-                      child: const CircleAvatar(
-                        radius: 10, backgroundColor: Colors.white,
-                        child: Icon(Icons.close, size: 14, color: Colors.red),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
+  Widget _buildSkuRow(DraftSku sku) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey[100]!))),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(sku.code, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                Text(sku.specs.values.join(" / "), style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+              ],
+            ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSizeDropdown(VariantFormItem item) {
-    return DropdownButtonFormField<String>(
-      value: item.selectedValue,
-      decoration: _inputDecoration("Chọn Size"),
-      items: _appConfig.sizeOptions.map((size) {
-        return DropdownMenuItem(value: size, child: Text(size));
-      }).toList(),
-      onChanged: (val) => setState(() => item.selectedValue = val),
-      validator: (v) => v == null ? "Chọn size" : null,
-    );
-  }
-
-  Widget _buildColorDropdown(VariantFormItem item) {
-    return DropdownButtonFormField<String>(
-      value: item.selectedValue,
-      decoration: _inputDecoration("Chọn Màu"),
-      items: _appConfig.colorOptions.entries.map((entry) {
-        // Parse hex string to Color object for visual dot
-        Color colorDot = Color(int.parse(entry.key));
-
-        return DropdownMenuItem(
-          value: entry.key, // Saves the Hex String (e.g., 0xFFFF0000)
-          child: Row(
-            children: [
-              Container(
-                width: 16, height: 16,
-                decoration: BoxDecoration(color: colorDot, shape: BoxShape.circle, border: Border.all(color: Colors.grey[300]!)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SizedBox(
+              height: 40,
+              child: TextFormField(
+                initialValue: sku.price.toString(),
+                keyboardType: TextInputType.number,
+                style: const TextStyle(fontSize: 13),
+                decoration: _inputDecoration(hint: "Price").copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 8)),
+                onChanged: (val) => sku.price = double.tryParse(val) ?? 0,
               ),
-              const SizedBox(width: 8),
-              Text(entry.value), // Shows the Name (e.g., Đỏ)
-            ],
+            ),
           ),
-        );
-      }).toList(),
-      onChanged: (val) => setState(() => item.selectedValue = val),
-      validator: (v) => v == null ? "Chọn màu" : null,
-    );
-  }
-
-  // --- COMMON WIDGETS ---
-
-  InputDecoration _inputDecoration(String label, {String? suffix}) {
-    return InputDecoration(
-      labelText: label,
-      suffixText: suffix,
-      labelStyle: const TextStyle(fontSize: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      isDense: true,
-    );
-  }
-
-  // (Include your previous _pickMedia, _buildMediaSection, _buildTextField, _buildCategoryDropdown helpers here...)
-  // They remain largely the same, just visual tweaks.
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0, left: 4),
-      child: Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[800])),
-    );
-  }
-
-  Widget _buildCategoryDropdown() {
-    return DropdownButtonFormField<int>(
-      value: _selectedCategoryId,
-      decoration: InputDecoration(
-        labelText: 'Danh mục',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SizedBox(
+              height: 40,
+              child: TextFormField(
+                initialValue: sku.stock.toString(),
+                keyboardType: TextInputType.number,
+                style: const TextStyle(fontSize: 13),
+                decoration: _inputDecoration(hint: "Stock").copyWith(contentPadding: const EdgeInsets.symmetric(horizontal: 8)),
+                onChanged: (val) => sku.stock = int.tryParse(val) ?? 0,
+              ),
+            ),
+          ),
+        ],
       ),
-      items: const [
-        DropdownMenuItem(value: 1, child: Text("Nike")),
-        DropdownMenuItem(value: 2, child: Text("Adidas")),
-        DropdownMenuItem(value: 3, child: Text("Puma")),
-        DropdownMenuItem(value: 4, child: Text("Other")),
-      ],
-      onChanged: (v) => setState(() => _selectedCategoryId = v),
-      validator: (v) => v == null ? "Chọn danh mục" : null,
     );
   }
-
 }
 
-class MediaItem {
-  final File file;
-  final String type;
-  final String path;
-  MediaItem({required this.file, required this.type, required this.path});
+// --- DRAFT MODELS ---
+class DraftAttribute {
+  String name = "";
+  List<DraftValue> values = [];
+}
+
+class DraftValue {
+  String value = "";
+  File? localFile;
+  String? uploadedUrl;
+}
+
+class DraftSku {
+  String code = "";
+  Map<String, String> specs = {};
+  double price = 0;
+  int stock = 0;
 }

@@ -1,8 +1,8 @@
 enum OrderStatus {
   PENDING,
-  PAID,
+  CONFIRMED,
   SHIPPED,
   DELIVERED,
   CANCELLED,
-  REFUNDED
+  RETURNED
 }

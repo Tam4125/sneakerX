@@ -1,94 +1,90 @@
-import 'dart:convert';
-
-import 'package:sneakerx/src/config/app_config.dart';
-import 'package:sneakerx/src/models/cart.dart';
+import 'package:dio/dio.dart';
+import 'package:sneakerx/src/modules/cart/dtos/cart_response.dart';
 import 'package:sneakerx/src/modules/cart/dtos/save_to_cart_request.dart';
+import 'package:sneakerx/src/modules/cart/dtos/update_cart_request.dart';
 import 'package:sneakerx/src/utils/api_client.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
 
 class CartService {
-  static const String baseUrl = "${AppConfig.baseUrl}/carts";
+  static const String _cartPath = "/carts";
 
-  Future<Cart?> getCurrentUserCart() async {
-    final url = "$baseUrl/me";
+  Future<ApiResponse<CartResponse>> getCurrentUserCart() async {
+    final endpoint = "$_cartPath/me";
 
     try {
-      final response = await ApiClient.get(url);
+      final response = await ApiClient.get(endpoint);
 
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => CartResponse.fromJson(data as Map<String, dynamic>)
+      );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-        // Parse the ApiResponse wrapper first
-        final apiResponse = ApiResponse<Cart>.fromJson(
-            jsonMap,
-                (data) => Cart.fromJson(data as Map<String, dynamic>)
-        );
-
-        return apiResponse.data;
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Error get current user cart");
-      }
-    } catch (e) {
-      throw Exception("Error get current user cart: $e}");
+    } on DioException catch(e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] ?? "Service Error: Get current user cart failed"
+      );
     }
   }
 
-  Future<Cart?> saveToCart(SaveToCartRequest request) async {
-    final url = "$baseUrl/items";
+  Future<ApiResponse<CartResponse>> updateCart(UpdateCartRequest request) async {
+    final endpoint = "$_cartPath/me";
+
+    try {
+      print("REQUEST??? : ${request.toJson()}");
+      final response = await ApiClient.put(endpoint,request.toJson());
+
+      return ApiResponse.fromJson(
+          response.data,
+              (data) => CartResponse.fromJson(data as Map<String, dynamic>)
+      );
+
+    } on DioException catch(e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Update cart failed"
+      );
+    }
+  }
+
+  Future<ApiResponse<CartResponse>> saveToCart(SaveToCartRequest request) async {
+    final endpoint = "$_cartPath/items";
 
     try {
       final response = await ApiClient.post(
-        url,
+        endpoint,
         request.toJson()
       );
 
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
+      return ApiResponse.fromJson(
+          response.data,
+              (data) => CartResponse.fromJson(data as Map<String, dynamic>)
+      );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-
-        // Parse the ApiResponse wrapper first
-        final apiResponse = ApiResponse<Cart>.fromJson(
-            jsonMap,
-                (data) => Cart.fromJson(data as Map<String, dynamic>)
-        );
-
-        return apiResponse.data;
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Error save product to cart");
-      }
-    } catch (e) {
-      throw Exception("Error save product to cart: $e}");
+    } on DioException catch(e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Save to cart failed"
+      );
     }
   }
 
-  Future<Cart?> deleteCartItem(int itemId) async {
-    final url = "$baseUrl/items/$itemId";
+  Future<ApiResponse<CartResponse>> deleteCartItem(int itemId) async {
+    final endpoint = "$_cartPath/items/$itemId";
 
     try {
-      final response = await ApiClient.delete(url, null);
+      final response = await ApiClient.delete(endpoint, null);
 
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
+      return ApiResponse.fromJson(
+          response.data,
+              (data) => CartResponse.fromJson(data as Map<String, dynamic>)
+      );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-        // Parse the ApiResponse wrapper first
-        final apiResponse = ApiResponse<Cart>.fromJson(
-            jsonMap,
-                (data) => Cart.fromJson(data as Map<String, dynamic>)
-        );
-
-        return apiResponse.data;
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Error delete cart item");
-      }
-    } catch (e) {
-      throw Exception("Error delete cart item: $e}");
+    } on DioException catch(e) {
+      return ApiResponse(
+          success: false,
+          message: e.response?.data['message'] ?? "Service Error: Delete item {$itemId} failed"
+      );
     }
   }
 }

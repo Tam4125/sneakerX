@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
+import 'package:sneakerx/src/modules/auth_features/views/sign_in.dart';
+import 'package:sneakerx/src/modules/auth_features/views/sign_up.dart';
 import 'package:sneakerx/src/modules/cart/view/cart_view.dart';
 import 'package:sneakerx/src/modules/search/screen/search_screen.dart';
 import 'package:sneakerx/src/modules/seller_dashboard/screens/seller_ui.dart';

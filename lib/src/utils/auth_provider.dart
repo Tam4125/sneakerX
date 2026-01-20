@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_request.dart';
 import 'package:sneakerx/src/modules/auth_features/dtos/user_sign_in_response.dart';
 import 'package:sneakerx/src/services/auth_service.dart';
@@ -54,25 +53,20 @@ class AuthProvider extends ChangeNotifier {
         print("Save access token: ${_currentUser!.accessToken}\nSave refresh token: ${_currentUser!.refreshToken}");
         await TokenManager.saveTokens(_currentUser!.accessToken, _currentUser!.refreshToken);
 
-
-        // 3. NOW Fetch Shop Info (ApiClient will now find the valid token)
         try {
           final shopResponse = await _shopService.getCurrentUserShop();
 
-          if (shopResponse != null) {
-            _shopId = shopResponse.shopId;
+          if (shopResponse.success && shopResponse.data != null) {
+
+            _shopId = shopResponse.data!.shop.shopId;
             print("User is a Seller. Shop ID: $_shopId");
-            await UserInfoManager.saveShopId(_shopId!);
           } else {
             // Valid user, but no shop
             print("User has no shop.");
             _shopId = null;
-            await UserInfoManager.clearInfo();
           }
         } catch (e) {
-          print("Failed to fetch shop details: $e");
-          // Don't fail the whole login just because shop fetch failed,
-          // just leave shopId null.
+          print("Service Error: Get shop detail failed {$e}");
           _shopId = null;
         }
 
@@ -112,7 +106,7 @@ class AuthProvider extends ChangeNotifier {
 
 
       if(response.success && response.data != null) {
-        _currentUser = response.data;
+        _currentUser!.user = response.data!;
         String? refreshToken = await TokenManager.getRefreshToken();
         if(refreshToken == null) {
           return;
@@ -126,8 +120,8 @@ class AuthProvider extends ChangeNotifier {
         try {
           final shopResponse = await _shopService.getCurrentUserShop();
 
-          if(shopResponse != null) {
-            _shopId = shopResponse.shopId;
+          if(shopResponse.success && shopResponse.data != null) {
+            _shopId = shopResponse.data!.shop.shopId;
             print("User is a Seller. Shop ID: $_shopId");
             await UserInfoManager.saveShopId(_shopId!);
           } else {
@@ -136,7 +130,7 @@ class AuthProvider extends ChangeNotifier {
           }
 
         } catch(e) {
-          print("Failed to fetch shop details: $e");
+          print("Service Error: Get shop detail failed {$e}");
           // Don't fail the whole login just because shop fetch failed,
           // just leave shopId null.
           _shopId = null;
@@ -164,12 +158,11 @@ class AuthProvider extends ChangeNotifier {
     try {
       final shopResponse = await _shopService.getCurrentUserShop();
 
-      if (shopResponse != null) {
-        _shopId = shopResponse.shopId;
+      if (shopResponse.success && shopResponse.data != null) {
+        _shopId = shopResponse.data!.shop.shopId;
         print("Shop created/found. ID: $_shopId");
         await UserInfoManager.saveShopId(_shopId!);
       }
-      // Important: Notify UI to switch from "Create Shop" to "Seller Dashboard"
       notifyListeners();
     } catch (e) {
       print("Failed to refresh shop status: $e");

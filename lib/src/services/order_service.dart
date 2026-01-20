@@ -1,118 +1,83 @@
-import 'dart:convert';
-import 'dart:ffi';
-
-import 'package:sneakerx/src/config/app_config.dart';
-import 'package:sneakerx/src/models/order.dart';
+import 'package:dio/dio.dart';
+import 'package:sneakerx/src/models/shop_order.dart';
 import 'package:sneakerx/src/modules/checkout/dtos/create_order_request.dart';
-import 'package:sneakerx/src/modules/checkout/dtos/update_order_request.dart';
+import 'package:sneakerx/src/modules/checkout/dtos/create_order_response.dart';
+import 'package:sneakerx/src/modules/seller_order/dtos/update_shop_order_request.dart';
 import 'package:sneakerx/src/utils/api_client.dart';
 import 'package:sneakerx/src/utils/api_response.dart';
 
 class OrderService {
-  static const String baseUrl = "${AppConfig.baseUrl}/orders";
+  static const String _orderPath = "/orders";
 
-  Future<Order?> createOrder(CreateOrderRequest request) async {
-    final url = "$baseUrl";
+  Future<ApiResponse<CreateOrderResponse>> createOrder(CreateOrderRequest request) async {
+    final endpoint = "$_orderPath";
+
+    print("CREATE ORDER REQUEST???: ${request.toJson()}");
 
     try {
       final response = await ApiClient.post(
-        url,
+        endpoint,
         request.toJson()
       );
 
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
+      print("CREATE ORDER RESPONSE???: ${response.data}");
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final apiResponse = ApiResponse<Order>.fromJson(
-          jsonMap,
-              (data) => Order.fromJson(data as Map<String, dynamic>),
-        );
-        return apiResponse.data;
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Error create new order");
-      }
-
-    } catch (e) {
-      throw Exception("Error create new order: $e");
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => CreateOrderResponse.fromJson(data as Map<String, dynamic>)
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] ?? "Service Error: Create order failed",
+        data: null
+      );
     }
   }
 
-  Future<Order?> updateOrderStatus(UpdateOrderStatusRequest request) async {
-    String url = "$baseUrl/${request.orderId}/status";
+  Future<ApiResponse<ShopOrder>> updateShopOrder(UpdateShopOrderRequest request) async {
+    final endpoint = "$_orderPath/shop-orders/${request.shopOrderId}";
+
     try {
       final response = await ApiClient.put(
-          url,
+          endpoint,
           request.toJson()
       );
 
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-
-        // Parse the ApiResponse wrapper first
-        final apiResponse = ApiResponse<Order>.fromJson(
-            jsonMap,
-                (data) => Order.fromJson(data as Map<String, dynamic>)
-        );
-
-        return apiResponse.data;
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Error update order status");
-      }
-    } catch (e) {
-      throw Exception("Error update order status: $e");
+      return ApiResponse.fromJson(
+        response.data,
+          (data) => ShopOrder.fromJson(data as Map<String, dynamic>)
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] ?? "Service Error: Update shop order failed",
+        data: null,
+      );
     }
   }
 
-  Future<String?> deleteOrder(int orderId) async {
-    String url = "$baseUrl/$orderId";
+  Future<ApiResponse<String>> deleteShopOrder(int shopOrderId) async {
+    final endpoint = "$_orderPath//shop-orders/$shopOrderId";
 
     try {
       final response = await ApiClient.delete(
-          url,
+          endpoint,
           null
       );
 
-      Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-
-        final data = jsonMap['data'];
-        return data;
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Error delete order");
-      }
-    } catch (e) {
-      throw Exception("Error delete order: $e");
+      return ApiResponse(
+        success: response.data['success'],
+        message: response.data['message'],
+        data: response.data['data'],
+      );
+    } on DioException catch(e) {
+      return ApiResponse(
+        success: false,
+        message: e.response?.data['message'] ?? "Service Error: Delete order failed",
+        data: null,
+      );
     }
-
-  }
-
-  Future<Order?> getOrderDetail(int orderId) async {
-    String url = "$baseUrl/$orderId";
-
-    try {
-      final response = await ApiClient.get(url);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-
-        Map<String, dynamic> jsonMap = jsonDecode(response.body);
-
-
-        final order = jsonMap['data'];
-        return Order.fromJson(order);
-
-      } else {
-        final errorMap = jsonDecode(response.body);
-        throw Exception(errorMap['message'] ?? "Failed order detail");
-      }
-    } catch (e) {
-      throw Exception("Failed order detail: $e");
-    }
-
   }
 
 }

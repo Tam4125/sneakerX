@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:sneakerx/src/models/product.dart';
-import 'package:sneakerx/src/modules/product_detail/view/product_detail_view.dart';
+import 'package:sneakerx/src/modules/search/widgets/product_list.dart';
 import 'package:sneakerx/src/services/product_service.dart';
 import 'package:sneakerx/src/modules/search/dtos/filter_query.dart';
 import '../widgets/search_bar_widget.dart';
-import '../widgets/search_history_chip.dart';
 import '../widgets/filter_bottom_sheet.dart';
-import '../widgets/product_search_card.dart';
-import '../data_search/mock_data.dart';
-import '../models_search/search_history.dart';
 import '../models_search/filter_options.dart';
 
 class SearchResultScreen extends StatefulWidget {
@@ -34,21 +30,11 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   // Keep track of current filter options
   FilterOptions _currentFilter = FilterOptions();
 
-  // Local Search History
-  List<SearchHistory> _searchHistory = [];
-
   @override
   void initState() {
     super.initState();
     _searchController.text = widget.searchQuery;
-    _loadHistory();
     _performSearch();
-  }
-
-  void _loadHistory() {
-    setState(() {
-      _searchHistory = MockData.getSearchHistory().take(3).toList();
-    });
   }
 
   Future<void> _performSearch() async {
@@ -67,11 +53,11 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
       );
 
       // 2. Call the API
-      final results = await _productService.searchProducts(query);
+      final response = await _productService.searchProducts(query);
 
-      if (mounted) {
+      if (response.success && mounted) {
         setState(() {
-          _searchResults = results ?? [];
+          _searchResults = response.data!;
           _isLoading = false;
         });
       }
@@ -109,12 +95,6 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
     );
   }
 
-  void _deleteHistoryItem(int id) {
-    setState(() {
-      _searchHistory.removeWhere((item) => item.id == id);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -144,44 +124,20 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Search History Section
-            if (_searchHistory.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _searchHistory.map((item) {
-                    return SearchHistoryChip(
-                      keyword: item.keyword,
-                      onTap: () {
-                        _searchController.text = item.keyword;
-                        _performSearch();
-                      },
-                      onDelete: () => _deleteHistoryItem(item.id),
-                    );
-                  }).toList(),
-                ),
-              ),
-
-            if (_searchHistory.isNotEmpty)
-              Divider(height: 1, thickness: 1, color: Colors.grey[200]),
-
-            // 2. Result Count
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Kết quả tìm kiếm',
+                    'Search Result',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    '${_searchResults.length} sản phẩm',
+                    '${_searchResults.length} products',
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey[600],
@@ -191,43 +147,27 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
               ),
             ),
 
-            // 3. Product List (Real Data)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _searchResults.isEmpty
-                  ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 50),
-                  child: Column(
-                    children: [
-                      Icon(Icons.search_off, size: 60, color: Colors.grey[300]),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Không tìm thấy sản phẩm nào',
-                        style: TextStyle(color: Colors.grey[600]),
+            // 3. Product List
+            _searchResults.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 50),
+                      child: Column(
+                        children: [
+                          Icon(Icons.search_off, size: 60, color: Colors.grey[300]),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Suitable products not found',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              )
-                  : ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _searchResults.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  return ProductSearchCard(
-                    product: _searchResults[index],
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => ProductDetailView(productId: _searchResults[index].productId))
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
+                )
+              : ProductList(products: _searchResults),
             const SizedBox(height: 30),
           ],
         ),

@@ -5,7 +5,8 @@ import 'package:sneakerx/src/modules/seller_order/screens/seller_orders.dart';
 import 'package:sneakerx/src/modules/seller_product/screens/my_product_list.dart';
 
 class SellerMainScreen extends StatefulWidget {
-  const SellerMainScreen({super.key});
+  final int initialIndex;
+  const SellerMainScreen({super.key, this.initialIndex = 0});
 
   @override
   State<SellerMainScreen> createState() => _MainSellerScreenState();
@@ -13,12 +14,12 @@ class SellerMainScreen extends StatefulWidget {
 
 class _MainSellerScreenState extends State<SellerMainScreen> {
 
-  int _selectedIndex = 0;
+  late int _selectedIndex;
 
   // 1. Define the list of screens for each tab
   final List<Widget> _pages = [
     const SellerDashboardScreen(),
-    const ShopProductList(), // Index 1: Placeholder
+    const ShopProductList(),
     const SellerOrdersScreen(),
     const SellerInfo(),
   ];
@@ -27,6 +28,12 @@ class _MainSellerScreenState extends State<SellerMainScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
   }
 
   @override

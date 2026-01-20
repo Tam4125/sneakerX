@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sneakerx/src/global_widgets/global_snackbar.dart';
 import 'package:sneakerx/src/modules/auth_features/dtos/user_register_request.dart';
 import 'package:sneakerx/src/modules/auth_features/views/general_button_loading.dart';
 import 'package:sneakerx/src/modules/auth_features/views/sign_in.dart';
@@ -65,7 +66,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       email: _emailController.text.trim(),
       phone: _phoneController.text.trim(),
       password: _passwordController.text,
-      avatarUrl: "https://res.cloudinary.com/dfningbdz/image/upload/v1766332049/Profile_avatar_placeholder_large_ta2cje.png"
     );
 
     // 3. Call Backend
@@ -79,23 +79,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     // 4. Show Result
     if (result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Tạo tài khoản thành công, vui lòng kiểm tra email để xác thực tài khoản"),
-          backgroundColor: Colors.green,
-        ),
+      GlobalSnackbar.show(
+        context,
+        success: true,
+        message: "Account created successfully! Please check your email to verify account"
       );
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => SignInScreen())
       );
     } else {
-      // This will show "Email already exists" or "Username already exists"
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message),
-          backgroundColor: Colors.redAccent,
-        ),
+      GlobalSnackbar.show(
+          context,
+          success: false,
+          message: result.message
       );
     }
   }

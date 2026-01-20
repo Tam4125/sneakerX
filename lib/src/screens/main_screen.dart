@@ -19,8 +19,8 @@ class _mainScreenState extends State<MainScreen> {
   // 1. Define the list of screens for each tab
   final List<Widget> _pages = [
     const HomeScreen(),
-    const SearchScreen(), // Index 1: Placeholder
-    const CartView(),   // Index 3: Placeholder
+    const SearchScreen(),
+    const CartScreen(),
     const ProfileView(),// Index 4: Placeholder
   ];
 

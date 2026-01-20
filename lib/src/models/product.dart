@@ -1,7 +1,4 @@
-import 'package:intl/intl.dart';
 import 'package:sneakerx/src/models/product_image.dart';
-import 'package:sneakerx/src/models/product_review.dart';
-import 'package:sneakerx/src/models/product_variant.dart';
 
 class Product {
   final int productId;
@@ -9,12 +6,12 @@ class Product {
   final int shopId;
   final String name;
   final String description;
+  final double basePrice;
   final double rating;
   final int soldCount;
   final DateTime createdAt;
+
   final List<ProductImage> images;
-  final List<ProductVariant> variants;
-  final List<ProductReview> reviews;
 
   Product({
     required this.productId,
@@ -22,11 +19,10 @@ class Product {
     required this.categoryId,
     required this.name,
     required this.description,
+    required this.basePrice,
     required this.rating,
     required this.soldCount,
     required this.images,
-    required this.variants,
-    required this.reviews,
     required this.createdAt,
   });
 
@@ -34,23 +30,17 @@ class Product {
     return Product(
       productId: json['productId'],
       shopId: json['shopId'],
-      categoryId: json['categoryId'] ?? 0,
+      categoryId: json['categoryId'],
       name: json['name'],
-      description: json['description'] ?? '',
-      rating: (json['rating'] ?? 0).toDouble(),
-      soldCount: json['soldCount'] ?? 0,
-      images: (json['images'] as List?)
-          ?.map((i) => ProductImage.fromJson(i))
-          .toList() ?? [],
-      variants: (json['variants'] as List?)
-          ?.map((v) => ProductVariant.fromJson(v))
-          .toList() ?? [],
-      reviews: (json['reviews'] as List?)
-          ?.map((v) => ProductReview.fromJson(v))
-          .toList() ?? [],
+      description: json['description'],
+      basePrice: json['basePrice'],
+      rating: json['rating'].toDouble(),
+      soldCount: json['soldCount'],
       createdAt: DateTime.parse(json['createdAt']),
+      images: (json['images'] as List?)
+        ?.map((image) => ProductImage.fromJson(image as Map<String, dynamic>))
+        .toList() ?? []
     );
-
   }
 
   Map<String, dynamic> toJson() {
@@ -65,10 +55,5 @@ class Product {
       'soldCount': soldCount,
       'createdAt': createdAt.toIso8601String(),
     };
-  }
-
-  // Helper to format currency
-  static String formatCurrency(double amount) {
-    return "${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}đ";
   }
 }
